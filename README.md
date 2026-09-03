@@ -294,7 +294,7 @@ Database Features
 ## Clone Repository
 
 ```bash
-git clone https://github.com/YourUsername/BankSystem.git
+git clone https://github.com/adhamgomaa/BankSystem-v2.git
 ```
 
 ---
