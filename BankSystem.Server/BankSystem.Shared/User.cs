@@ -1,0 +1,38 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace BankSystem.Shared
+{
+    public class User
+    {
+        public int userId { get; set; }
+        public int personId { get; set; }
+        public string username { get; set; }
+        public string password { get; set; }
+        public int permissions { get; set; }
+        public bool isActive { get; set; }
+
+        public User()
+        {
+            userId = -1;
+            personId = -1;
+            username = string.Empty;
+            password = string.Empty;
+            permissions = 0;
+            isActive = false;
+        }
+
+        public User(int userId, int personId, string username, string password, int permissions, bool isActive)
+        {
+            this.userId = userId;
+            this.personId = personId;
+            this.username = username;
+            this.password = password;
+            this.permissions = permissions;
+            this.isActive = isActive;
+        }
+    }
+}
