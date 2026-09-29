@@ -169,7 +169,7 @@ namespace BankSystem.API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<UpdateUserDTO> UpdateUser(int id, UpdateUserDTO updateUser)
         {
-            if (id < 1 || string.IsNullOrEmpty(updateUser.username) || updateUser.password.Length < 6)
+            if (id < 1 || updateUser.password.Length < 6)
                 return BadRequest("Invalid data");
 
             User? user = clsUser.FindUser(id);

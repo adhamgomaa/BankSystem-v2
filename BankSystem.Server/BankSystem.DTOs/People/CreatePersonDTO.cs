@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,12 +9,19 @@ namespace BankSystem.DTOs.People
 {
     public class CreatePersonDTO
     {
+        [Required]
         public string firstName { get; set; }
+        [Required]
         public string secondName { get; set; }
+        [Required]
         public string lastName { get; set; }
+        [Required]
         public string email { get; set; }
+        [Required]
         public string phone { get; set; }
+        [Required]
         public byte gender { get; set; }
+        [Required]
         public DateTime birthDate { get; set; }
         public CreatePersonDTO()
         {

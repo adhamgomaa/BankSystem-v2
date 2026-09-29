@@ -78,10 +78,6 @@ namespace BankSystem.API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<PeopleDTO> AddNewPerson(CreatePersonDTO createPerson)
         {
-            if (string.IsNullOrWhiteSpace(createPerson.firstName) || string.IsNullOrWhiteSpace(createPerson.lastName) || string.IsNullOrWhiteSpace(createPerson.secondName)
-                || string.IsNullOrWhiteSpace(createPerson.phone) || string.IsNullOrWhiteSpace(createPerson.email))
-                return BadRequest("Invalid data");
-
             Person newPerson = new Person
             {
                 firstName = createPerson.firstName,
@@ -108,7 +104,7 @@ namespace BankSystem.API.Controllers
                 BirthDate = newPerson.birthDate
             };
 
-            return CreatedAtRoute("GetClientByID", new { id = newPerson.personId }, person);
+            return CreatedAtRoute("GetPersonByID", new { id = newPerson.personId }, person);
         }
 
         [HttpPut("{id}", Name = "UpdatePerson")]
@@ -118,8 +114,7 @@ namespace BankSystem.API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<UpdatePersonDTO> UpdatePerson(int id, UpdatePersonDTO updatePerson)
         {
-            if (id < 1 || string.IsNullOrWhiteSpace(updatePerson.firstName) || string.IsNullOrWhiteSpace(updatePerson.lastName) || string.IsNullOrWhiteSpace(updatePerson.secondName)
-                || string.IsNullOrWhiteSpace(updatePerson.phone) || string.IsNullOrWhiteSpace(updatePerson.email))
+            if (id < 1)
                 return BadRequest("Invalid data");
 
             Person? person = clsPeople.GetPerson(id);
