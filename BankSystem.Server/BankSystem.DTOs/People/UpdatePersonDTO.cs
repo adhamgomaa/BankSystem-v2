@@ -1,0 +1,48 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace BankSystem.DTOs.People
+{
+    public class UpdatePersonDTO
+    {
+        [Required]
+        public string firstName { get; set; }
+        [Required]
+        public string secondName { get; set; }
+        [Required]
+        public string lastName { get; set; }
+        [Required]
+        public string email { get; set; }
+        [Required]
+        public string phone { get; set; }
+        [Required]
+        public byte gender { get; set; }
+        [Required]
+        public DateTime birthDate { get; set; }
+        public UpdatePersonDTO()
+        {
+            firstName = string.Empty;
+            secondName = string.Empty;
+            lastName = string.Empty;
+            email = string.Empty;
+            phone = string.Empty;
+            gender = 0;
+            birthDate = DateTime.Now;
+        }
+
+        public UpdatePersonDTO(string firstName, string secondName, string lastName, string email, string phone, byte gender, DateTime date)
+        {
+            this.firstName = firstName;
+            this.secondName = secondName;
+            this.lastName = lastName;
+            this.email = email;
+            this.phone = phone;
+            this.gender = gender;
+            this.birthDate = date;
+        }
+    }
+}

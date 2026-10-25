@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>91eb39b7-e16b-4932-8dcd-e684bd18c3be</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BankSystem.Business\BankSystem.Business.csproj" />
+    <ProjectReference Include="..\BankSystem.DTOs\BankSystem.DTOs.csproj" />
+    <ProjectReference Include="..\BankSystem.Shared\BankSystem.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

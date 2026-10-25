@@ -1,0 +1,36 @@
+@BankSystem.API_HostAddress = http://localhost:5243
+
+### Login
+POST {{BankSystem.API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "userName": "your-username",
+  "password": "your-password"
+}
+
+### Refresh the access and refresh tokens
+POST {{BankSystem.API_HostAddress}}/api/Auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "refresh-token-from-login-or-last-refresh"
+}
+
+### Logout from this login session
+POST {{BankSystem.API_HostAddress}}/api/Auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "current-refresh-token"
+}
+
+###
+GET {{BankSystem.API_HostAddress}}/api/User/Count
+Accept: application/json
+
+### View the most recent login attempts (requires full-access permission)
+GET {{BankSystem.API_HostAddress}}/api/Registration/LoginAttempts?take=50
+Accept: application/json
+
+###
