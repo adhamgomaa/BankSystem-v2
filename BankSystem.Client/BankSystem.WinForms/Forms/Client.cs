@@ -48,6 +48,9 @@ namespace BankSystem.WinForms.Forms
         {
             timer1.Start();
             lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
+            transferToolStripMenuItem.Visible =
+                CurrentUser.HasPermission(BankPermission.Client) &&
+                CurrentUser.HasPermission(BankPermission.Transfer);
             dtBirthDate.MaxDate = DateTime.Today.AddYears(-21);
             dtBirthDate.MinDate = DateTime.Today.AddYears(-80);
             await _LoadClientData();
@@ -170,7 +173,7 @@ namespace BankSystem.WinForms.Forms
                     editMale.Checked = true;
                 else
                     editFemale.Checked = true;
-                editCode.Text = client.pinCode.ToString();
+                editCode.Text = string.Empty;
                 editAccNum.Text = client.accountNumber.ToString();
                 editBalance.Value = client.balance;
             }
@@ -206,34 +209,40 @@ namespace BankSystem.WinForms.Forms
                 return;
             }
             ClientDTO? client = await _clientService.GetClientByIdAsync(Convert.ToInt32(boxClientId.Text));
-            if (client != null)
+            if (client is null || client.clientId < 1)
+                return;
+
+            if (!int.TryParse(editCode.Text, out int newPinCode))
             {
-                UpdateClientDTO updateClient = new()
-                {
-                    accountNumber = Convert.ToInt32(editAccNum.Text),
-                    pinCode = Convert.ToInt32(editCode.Text),
-                    balance = editBalance.Value,
-                };
-                if (MessageBox.Show($"Are you sure to update the client?", "Confirm", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
-                {
-                    bool result = await _clientService.UpdateClientAsync(Convert.ToInt32(boxClientId.Text), updateClient);
-                    if (result)
-                    {
-                        MessageBox.Show($"The Client with ID = [{boxClientId.Text}] updated Successfully", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        await _LoadClientData();
-                        _fillInComboBox();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Error", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                btnUpdate.Enabled = false;
-                boxClientId.SelectedIndex = -1;
-                editAccNum.Text = "";
-                editCode.Text = "";
-                editBalance.Value = 0;
+                MessageBox.Show("Enter a new PIN code before updating this client.", "Invalid PIN", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
+
+            UpdateClientDTO updateClient = new()
+            {
+                accountNumber = Convert.ToInt32(editAccNum.Text),
+                pinCode = newPinCode,
+                balance = editBalance.Value,
+            };
+            if (MessageBox.Show($"Are you sure to update the client?", "Confirm", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
+            {
+                bool result = await _clientService.UpdateClientAsync(Convert.ToInt32(boxClientId.Text), updateClient);
+                if (result)
+                {
+                    MessageBox.Show($"The Client with ID = [{boxClientId.Text}] updated Successfully", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    await _LoadClientData();
+                    _fillInComboBox();
+                }
+                else
+                {
+                    MessageBox.Show("Error", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            btnUpdate.Enabled = false;
+            boxClientId.SelectedIndex = -1;
+            editAccNum.Text = "";
+            editCode.Text = "";
+            editBalance.Value = 0;
         }
 
         private async void deleteToolStripMenuItem_Click(object sender, EventArgs e)
@@ -281,6 +290,10 @@ namespace BankSystem.WinForms.Forms
 
         private async void transferToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.Client) ||
+                !CurrentUser.HasPermission(BankPermission.Transfer))
+                return;
+
             Transaction frm = new((int)dgvShow.CurrentRow.Cells[1].Value)
             {
                 SelectedTabIndex = 3

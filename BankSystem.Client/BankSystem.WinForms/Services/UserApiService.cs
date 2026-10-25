@@ -1,27 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using BankSystem.WinForms.Helpers;
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
-using System.Threading.Tasks;
 using BankSystem.DTOs.Users;
-using BankSystem.WinForms.Helpers;
 
 namespace BankSystem.WinForms.Services
 {
     public class UserApiService
     {
         private readonly HttpClient _httpClient = ApiClient.httpClient;
-
-        public async Task<LoginUserDTO?> LoginAsync(LoginRequestDTO loginRequest)
-        {
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(ApiRoutes.User.Login, loginRequest);
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-            return await response.Content.ReadFromJsonAsync<LoginUserDTO>();
-        }
 
         public async Task<List<UserViewDTO>?> GetAllUserAsync()
         {

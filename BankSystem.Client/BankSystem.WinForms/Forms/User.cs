@@ -1,5 +1,5 @@
-﻿using BankSystem.DTOs.People;
-using BankSystem.DTOs.Registerations;
+﻿using BankSystem.DTOs.Auth;
+using BankSystem.DTOs.People;
 using BankSystem.DTOs.Users;
 using BankSystem.WinForms.Helpers;
 using BankSystem.WinForms.Services;
@@ -18,10 +18,11 @@ namespace BankSystem.WinForms.Forms
 {
     public partial class User : Form
     {
-        private short _permission = 0;
+        private int _permission;
+        private bool _updatingPermissionControls;
         private UserApiService _userService = new();
-        private RegistrationApiService _registerationService = new();
-        private List<RegistrationViewDTO>? _allRegisters = new();
+        private RegistrationApiService _registrationService = new();
+        private List<LoginAttemptDTO>? _allRegisters = new();
         private List<UserViewDTO>? _allUsers = new();
         public User()
         {
@@ -33,7 +34,9 @@ namespace BankSystem.WinForms.Forms
             _allUsers = await _userService.GetAllUserAsync();
             dgvShow.DataSource = _allUsers;
             lblCount.Text = dgvShow.RowCount.ToString() + " User(s) Found";
-            _allRegisters = await _registerationService.GetAllRegistrsAsync();
+            _allRegisters = CurrentUser.HasPermission(BankPermission.FullAccess)
+                ? await _registrationService.GetAllRegistersAsync()
+                : new List<LoginAttemptDTO>();
             dgvRegisters.DataSource = _allRegisters;
             lblCountRegisters.Text = dgvRegisters.RowCount.ToString() + " Register(s) Found";
         }
@@ -60,7 +63,7 @@ namespace BankSystem.WinForms.Forms
                 return;
             }
 
-            var filterdRegisters = _allRegisters?.Where(p => p.userId.ToString().Contains(keyword)).ToList();
+            var filterdRegisters = _allRegisters?.Where(p => p.UserId?.ToString().Contains(keyword) == true).ToList();
             dgvRegisters.DataSource = filterdRegisters;
         }
 
@@ -70,8 +73,20 @@ namespace BankSystem.WinForms.Forms
             lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
             dtBirthDate.MaxDate = DateTime.Today.AddYears(-21);
             dtBirthDate.MinDate = DateTime.Today.AddYears(-80);
+            SetPermissionControls(0, rbYes, rbNo, cbPeople, cbClients, cbTransaction, cbUser);
+
+            bool canManageUsers = CurrentUser.HasPermission(BankPermission.FullAccess);
+            if (!canManageUsers)
+            {
+                tabControl1.TabPages.Remove(tbAdd);
+                tabControl1.TabPages.Remove(tbEdit);
+                tabControl1.TabPages.Remove(tpRegister);
+                deleteToolStripMenuItem.Visible = false;
+            }
+
             await _LoadData();
-            _fillInComboBox();
+            if (canManageUsers)
+                _fillInComboBox();
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)
@@ -129,34 +144,18 @@ namespace BankSystem.WinForms.Forms
         {
             txtUsername.Text = "";
             txtPass.Text = "";
-            _permission = 0;
-            rbYes.Checked = true;
-            rbNo.Checked = false;
-            cbPeople.Enabled = false;
-            cbClients.Enabled = false;
-            cbTransaction.Enabled = false;
-            cbUser.Enabled = false;
-            cbClients.Checked = false;
-            cbTransaction.Checked = false;
-            cbUser.Checked = false;
-            cbPeople.Checked = false;
+            SetPermissionControls(0, rbYes, rbNo, cbPeople, cbClients, cbTransaction, cbUser);
             boxUserId.SelectedIndex = -1;
             editPassword.Text = "";
             editUsername.Text = "";
-            editYseAccess.Checked = false;
-            editNoAccess.Checked = false;
-            editClients.Enabled = false;
-            editPeople.Enabled = false;
-            editTransaction.Enabled = false;
-            editUsers.Enabled = false;
-            editClients.Checked = false;
-            editPeople.Checked = false;
-            editTransaction.Checked = false;
-            editUsers.Checked = false;
+            SetPermissionControls(0, editYseAccess, editNoAccess, editPeople, editClients, editTransaction, editUsers);
         }
 
         private async void btnAdd_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.FullAccess))
+                return;
+
             if (!this.ValidateChildren())
             {
                 MessageBox.Show("Please Enter All Fields", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -189,46 +188,72 @@ namespace BankSystem.WinForms.Forms
 
         private void rbYes_CheckedChanged(object sender, EventArgs e)
         {
-            cbPeople.Enabled = false;
-            cbClients.Enabled = false;
-            cbTransaction.Enabled = false;
-            cbUser.Enabled = false;
+            if (_updatingPermissionControls || !rbYes.Checked)
+                return;
+
+            SetPermissionControls(-1, rbYes, rbNo, cbPeople, cbClients, cbTransaction, cbUser);
             _permission = -1;
         }
 
         private void rbNo_CheckedChanged(object sender, EventArgs e)
         {
-            cbPeople.Enabled = true;
-            cbClients.Enabled = true;
-            cbTransaction.Enabled = true;
-            cbUser.Enabled = true;
+            if (_updatingPermissionControls || !rbNo.Checked)
+                return;
+
+            SetPermissionControls(0, rbYes, rbNo, cbPeople, cbClients, cbTransaction, cbUser);
             _permission = 0;
         }
 
         private void editYseAccess_CheckedChanged(object sender, EventArgs e)
         {
-            editClients.Enabled = false;
-            editPeople.Enabled = false;
-            editTransaction.Enabled = false;
-            editUsers.Enabled = false;
+            if (_updatingPermissionControls || !editYseAccess.Checked)
+                return;
+
+            SetPermissionControls(-1, editYseAccess, editNoAccess, editPeople, editClients, editTransaction, editUsers);
             _permission = -1;
         }
 
         private void editNoAccess_CheckedChanged(object sender, EventArgs e)
         {
-            editClients.Enabled = true;
-            editPeople.Enabled = true;
-            editTransaction.Enabled = true;
-            editUsers.Enabled = true;
+            if (_updatingPermissionControls || !editNoAccess.Checked)
+                return;
+
+            SetPermissionControls(0, editYseAccess, editNoAccess, editPeople, editClients, editTransaction, editUsers);
             _permission = 0;
+        }
+
+        private void SetPermissionControls(
+            int permissions,
+            RadioButton fullAccess,
+            RadioButton customAccess,
+            params CheckBox[] checkBoxes)
+        {
+            _updatingPermissionControls = true;
+            bool hasFullAccess = permissions == (int)BankPermission.FullAccess;
+            fullAccess.Checked = hasFullAccess;
+            customAccess.Checked = !hasFullAccess;
+
+            foreach (CheckBox checkBox in checkBoxes)
+            {
+                int permission = Convert.ToInt32(checkBox.Tag);
+                checkBox.Enabled = !hasFullAccess;
+                checkBox.Checked = !hasFullAccess && (permissions & permission) == permission;
+            }
+
+            _updatingPermissionControls = false;
+            _permission = permissions;
         }
 
         private void permissionCheckBoxes(CheckBox box, EventArgs e)
         {
+            if (_updatingPermissionControls || _permission == (int)BankPermission.FullAccess)
+                return;
+
+            int permission = Convert.ToInt32(box.Tag);
             if (box.Checked)
-                _permission += Convert.ToInt16(box.Tag);
+                _permission |= permission;
             else
-                _permission -= Convert.ToInt16(box.Tag);
+                _permission &= ~permission;
         }
 
         private void checkBox_CheckedChanged(object sender, EventArgs e)
@@ -303,15 +328,22 @@ namespace BankSystem.WinForms.Forms
                 else
                     editNoActive.Checked = true;
 
-                if (user.permissions == -1)
-                    editYseAccess.Checked = true;
-                else
-                    editNoAccess.Checked = true;
+                SetPermissionControls(
+                    user.permissions,
+                    editYseAccess,
+                    editNoAccess,
+                    editPeople,
+                    editClients,
+                    editTransaction,
+                    editUsers);
             }
         }
 
         private async void btnUpdate_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.FullAccess))
+                return;
+
             if (boxUserId.SelectedIndex == -1)
                 return;
             GetUserDTO? user = await _userService.GetUserByIdAsync(Convert.ToInt32(boxUserId.Text));
@@ -344,6 +376,9 @@ namespace BankSystem.WinForms.Forms
 
         private async void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.FullAccess))
+                return;
+
             if (MessageBox.Show($"Are you sure to Delete this user [{dgvShow.CurrentRow.Cells[2].Value}]?", "Confirm", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
             {
                 bool result = await _userService.DeleteUserAsync((int)dgvShow.CurrentRow.Cells[0].Value);
@@ -372,13 +407,13 @@ namespace BankSystem.WinForms.Forms
 
         private void rbRegisterAsc_CheckedChanged(object sender, EventArgs e)
         {
-            _allRegisters = _allRegisters?.OrderBy(p => p.registerId).ToList();
+            _allRegisters = _allRegisters?.OrderBy(p => p.LoginAttemptId).ToList();
             dgvRegisters.DataSource = _allRegisters;
         }
 
         private void rbRegisterDesc_CheckedChanged(object sender, EventArgs e)
         {
-            _allRegisters = _allRegisters?.OrderByDescending(p => p.registerId).ToList();
+            _allRegisters = _allRegisters?.OrderByDescending(p => p.LoginAttemptId).ToList();
             dgvRegisters.DataSource = _allRegisters;
         }
     }

@@ -1,4 +1,5 @@
 ﻿using BankSystem.WinForms.Helpers;
+using BankSystem.WinForms.Services;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -19,9 +20,26 @@ namespace BankSystem.WinForms.Forms
             InitializeComponent();
         }
 
-        private void btnLogout_Click(object sender, EventArgs e)
+        private async void btnLogout_Click(object sender, EventArgs e)
         {
-            CurrentUser.User = null;
+            btnLogout.Enabled = false;
+            try
+            {
+                await new AuthApiService().LogoutAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"You have been signed out locally, but the server could not revoke your refresh token: {ex.Message}",
+                    "Logout Warning",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                CurrentUser.Clear();
+            }
+
             Logout = true;
             this.Close();
         }
@@ -35,27 +53,11 @@ namespace BankSystem.WinForms.Forms
 
         private void CheckPermissions()
         {
-            List<Button> buttonList = panel2.Controls.OfType<Button>().ToList();
-            if (CurrentUser.User?.permissions == -1)
+            btnLogout.Visible = true;
+            foreach (Button button in panel2.Controls.OfType<Button>().Where(button => button != btnLogout))
             {
-                btnClients.Visible = true;
-                btnTransaction.Visible = true;
-                btnUsers.Visible = true;
-                btnPeople.Visible = true;
-            }
-            else
-            {
-                foreach (Button button in buttonList)
-                {
-                    if (Convert.ToBoolean(CurrentUser.User?.permissions & Convert.ToInt16(button.Tag)))
-                    {
-                        button.Visible = true;
-                    }
-                    else
-                    {
-                        button.Visible = false;
-                    }
-                }
+                button.Visible = int.TryParse(button.Tag?.ToString(), out int permission) &&
+                    CurrentUser.HasPermission((BankPermission)permission);
             }
         }
 
@@ -66,24 +68,36 @@ namespace BankSystem.WinForms.Forms
 
         private void btnPeople_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.People))
+                return;
+
             People people = new();
             people.ShowDialog();
         }
 
         private void btnClients_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.Client))
+                return;
+
             Client client = new();
             client.ShowDialog();
         }
 
         private void btnTransaction_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.Transfer))
+                return;
+
             Transaction transaction = new();
             transaction.ShowDialog();
         }
 
         private void btnUsers_Click(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.User))
+                return;
+
             User user = new();
             user.ShowDialog();
         }

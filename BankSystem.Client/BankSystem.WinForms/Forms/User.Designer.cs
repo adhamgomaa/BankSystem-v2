@@ -368,7 +368,7 @@
             cbUser.Name = "cbUser";
             cbUser.Size = new Size(157, 30);
             cbUser.TabIndex = 35;
-            cbUser.Tag = "8";
+            cbUser.Tag = "16";
             cbUser.Text = "Manage Users";
             cbUser.UseVisualStyleBackColor = true;
             cbUser.CheckedChanged += checkBox_CheckedChanged;
@@ -428,7 +428,7 @@
             // rbYes
             // 
             rbYes.AutoSize = true;
-            rbYes.Checked = true;
+            rbNo.Checked = true;
             rbYes.Cursor = Cursors.Hand;
             rbYes.Font = new Font("Palatino Linotype", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             rbYes.Location = new Point(263, 87);
@@ -818,7 +818,7 @@
             editUsers.Name = "editUsers";
             editUsers.Size = new Size(157, 30);
             editUsers.TabIndex = 35;
-            editUsers.Tag = "8";
+            editUsers.Tag = "16";
             editUsers.Text = "Manage Users";
             editUsers.UseVisualStyleBackColor = true;
             editUsers.CheckedChanged += checkBox_CheckedChanged;

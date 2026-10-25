@@ -15,18 +15,18 @@ namespace BankSystem.WinForms.Services
     {
         private readonly HttpClient _httpClient = ApiClient.httpClient;
 
-        public async Task<List<PeopleViewDTO>?> GetAllPeopleAsync()
+        public async Task<List<PersonViewDTO>?> GetAllPeopleAsync()
         {
             HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.People.GetAll);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                return new List<PeopleViewDTO>();
+                return new List<PersonViewDTO>();
             }
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception(await response.Content.ReadAsStringAsync());
 
-            return await response.Content.ReadFromJsonAsync<List<PeopleViewDTO>>();
+            return await response.Content.ReadFromJsonAsync<List<PersonViewDTO>>();
         }
 
         public async Task<GetPersonDTO?> GetPersonByIdAsync(int id)

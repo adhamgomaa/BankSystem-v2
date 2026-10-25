@@ -17,7 +17,7 @@ namespace BankSystem.WinForms.Forms
     public partial class People : Form
     {
         private PersonApiService _personService = new();
-        private List<PeopleViewDTO>? _allPeople = new();
+        private List<PersonViewDTO>? _allPeople = new();
         public People()
         {
             InitializeComponent();

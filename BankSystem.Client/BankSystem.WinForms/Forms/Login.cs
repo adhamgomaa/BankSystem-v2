@@ -1,16 +1,9 @@
-﻿using BankSystem.DTOs.Registerations;
-using BankSystem.DTOs.Users;
+﻿using BankSystem.DTOs.Auth;
 using BankSystem.WinForms.Helpers;
 using BankSystem.WinForms.Services;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace BankSystem.WinForms.Forms
@@ -18,7 +11,8 @@ namespace BankSystem.WinForms.Forms
     public partial class Login : Form
     {
         private const string path = "remember.txt";
-        private short attempt = 3;
+        private readonly AuthApiService _authService = new();
+
         public Login()
         {
             InitializeComponent();
@@ -29,12 +23,13 @@ namespace BankSystem.WinForms.Forms
             timer1.Start();
             if (File.Exists(path))
             {
-                List<string> lines = File.ReadLines(path).ToList();
-                if (lines.Count >= 2)
+                string[] lines = File.ReadAllLines(path);
+                if (lines.Length > 0 && !string.IsNullOrWhiteSpace(lines[0]))
                 {
                     txtUserName.Text = lines[0];
-                    txtPassword.Text = lines[1];
                     cbRemember.Checked = true;
+                    if (lines.Length > 1)
+                        File.WriteAllText(path, lines[0]);
                 }
             }
         }
@@ -65,61 +60,44 @@ namespace BankSystem.WinForms.Forms
 
         private async Task CheckLogin()
         {
-            UserApiService service = new();
             LoginRequestDTO requestDTO = new()
             {
-                UserName = txtUserName.Text,
+                UserName = txtUserName.Text.Trim(),
                 Password = txtPassword.Text
             };
 
-            LoginUserDTO? loggedUser = await service.LoginAsync(requestDTO);
-            if (loggedUser != null)
+            try
             {
-                if (loggedUser.isActive)
+                LoginResponseDTO? tokens = await _authService.LoginAsync(requestDTO);
+                if (tokens is not null)
                 {
-                    attempt = 3;
                     lblAttempt.Visible = false;
                     lblInvalid.Visible = false;
-                    CurrentUser.User = loggedUser;
-                    RegistrationApiService registeration = new();
-                    CreateRegisterDTO createRegister = new()
+                    CurrentUser.SignIn(tokens, requestDTO.UserName);
+                    Home home = new();
+                    home.Show();
+                    this.Hide();
+                    home.FormClosed += (s, arg) =>
                     {
-                        UserID = loggedUser.userId
+                        if (home.Logout)
+                            this.Show();
+                        else
+                            Application.Exit();
                     };
-                    bool register = await registeration.AddRegistrationAsync(createRegister);
-                    if (register)
-                    {
-                        Home home = new();
-                        home.Show();
-                        this.Hide();
-                        home.FormClosed += (s, arg) =>
-                        {
-                            if (home.Logout)
-                                this.Show();
-                            else
-                                Application.Exit();
-                        };
-                    }
                 }
                 else
                 {
-                    MessageBox.Show("Your account is deactivated, please contact your admin", "Wrong", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    lblInvalid.Text = "Invalid username or password";
+                    lblInvalid.Visible = true;
                 }
-
             }
-            else
+            catch (Exception ex)
             {
-                attempt--;
-                lblInvalid.Visible = true;
-                lblAttempt.Visible = true;
-                if (attempt == 0)
-                {
-                    btnLogin.Enabled = false;
-                    lblInvalid.Text = "You Are Locked After 3 Faild Trails!!";
-                    lblAttempt.Text = "Contact System Adminstrator To Unlock Your Account";
-                    return;
-                }
-                lblAttempt.Text = "You have " + attempt + " attempts before lock your account";
+                MessageBox.Show(
+                    $"Unable to sign in: {ex.Message}",
+                    "Login Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
@@ -130,18 +108,25 @@ namespace BankSystem.WinForms.Forms
                 MessageBox.Show("Please Enter All Fields", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            string username = txtUserName.Text;
-            string password = txtPassword.Text;
+            string username = txtUserName.Text.Trim();
             if (cbRemember.Checked)
             {
-                File.WriteAllText(path, $"{username}\n{password}");
+                File.WriteAllText(path, username);
             }
             else
             {
                 if (File.Exists(path))
                     File.Delete(path);
             }
-            await CheckLogin();
+            btnLogin.Enabled = false;
+            try
+            {
+                await CheckLogin();
+            }
+            finally
+            {
+                btnLogin.Enabled = true;
+            }
         }
     }
 }

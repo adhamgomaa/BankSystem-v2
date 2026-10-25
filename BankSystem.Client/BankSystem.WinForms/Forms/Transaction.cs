@@ -53,7 +53,7 @@ namespace BankSystem.WinForms.Forms
 
         private void _SelectClient()
         {
-            if (this.SelectedTabIndex == 0)
+            if (tabControl1.SelectedTab == tbDeposit)
             {
                 if (boxAccNumDeposit.Items.Contains(_accNum))
                 {
@@ -61,7 +61,7 @@ namespace BankSystem.WinForms.Forms
                 }
             }
 
-            if (this.SelectedTabIndex == 1)
+            if (tabControl1.SelectedTab == tbWithdraw)
             {
                 if (boxAccNumWithdraw.Items.Contains(_accNum))
                 {
@@ -69,7 +69,7 @@ namespace BankSystem.WinForms.Forms
                 }
             }
 
-            if (this.SelectedTabIndex == 3)
+            if (tabControl1.SelectedTab == tbTransfer)
             {
                 if (boxFromAccNum.Items.Contains(_accNum))
                 {
@@ -80,18 +80,35 @@ namespace BankSystem.WinForms.Forms
 
         private async Task _LoadData()
         {
-            _allTransfers = await _trasnferService.GetAllTransfersAsync();
+            if (CurrentUser.HasPermission(BankPermission.Transfer))
+            {
+                _allTransfers = await _trasnferService.GetAllTransfersAsync();
+            }
+            else
+            {
+                _allTransfers = new List<TransferDTO>();
+            }
+
             dgvTrasnferLog.DataSource = _allTransfers;
             lblCountTransfer.Text = dgvTrasnferLog.Rows.Count.ToString() + " Transfer(s) Found";
-            _allClients = await _clientSerivce.GetAllClientAsync();
+            if (CurrentUser.HasPermission(BankPermission.Client))
+            {
+                _allClients = await _clientSerivce.GetAllClientAsync();
+                lblTotal.Text = "Total Balance is: ($" + await _clientSerivce.GetAllBalancesAsync() + ")";
+            }
+            else
+            {
+                _allClients = new List<ClientViewDTO>();
+                lblTotal.Text = string.Empty;
+            }
+
             dgvShow.DataSource = _allClients;
-            lblTotal.Text = "Total Balance is: ($" + await _clientSerivce.GetAllBalancesAsync() + ")";
             lblCount.Text = dgvShow.RowCount.ToString() + " Client(s) Found";
         }
 
         private void _fillAllAccountNumberInComboBox()
         {
-            if (_allClients?.Count == 0)
+            if (_allClients is null || _allClients.Count == 0)
             {
                 MessageBox.Show("Please Add some clients to open this window", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -177,13 +194,40 @@ namespace BankSystem.WinForms.Forms
         {
             timer1.Start();
             lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
+
+            bool canManageClients = CurrentUser.HasPermission(BankPermission.Client);
+            bool canViewTransfers = CurrentUser.HasPermission(BankPermission.Transfer);
+            if (!canManageClients)
+            {
+                tabControl1.TabPages.Remove(tbDeposit);
+                tabControl1.TabPages.Remove(tbWithdraw);
+                tabControl1.TabPages.Remove(tbEdit);
+                tabControl1.TabPages.Remove(tbTransfer);
+            }
+
+            if (!canViewTransfers)
+            {
+                tabControl1.TabPages.Remove(tbTransfer);
+                tabControl1.TabPages.Remove(tbLog);
+            }
+
+            if (tabControl1.TabCount == 0)
+            {
+                Close();
+                return;
+            }
+
             await _LoadData();
-            _fillAllAccountNumberInComboBox();
+            if (canManageClients)
+                _fillAllAccountNumberInComboBox();
             _SelectClient();
         }
 
         private async void boxAccNumDeposit_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.Client))
+                return;
+
             if (boxAccNumDeposit.SelectedIndex == -1)
             {
                 lblBalanceDeposit.Visible = false;
@@ -196,7 +240,8 @@ namespace BankSystem.WinForms.Forms
 
         private async void btnDeposit_Click(object sender, EventArgs e)
         {
-            if (boxAccNumDeposit.SelectedIndex == -1)
+            if (!CurrentUser.HasPermission(BankPermission.Client) ||
+                boxAccNumDeposit.SelectedIndex == -1)
             {
                 return;
             }
@@ -217,6 +262,9 @@ namespace BankSystem.WinForms.Forms
 
         private async void boxAccNumWithdraw_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.Client))
+                return;
+
             if (boxAccNumWithdraw.SelectedIndex == -1)
             {
                 lblBalanceWithdraw.Visible = false;
@@ -229,7 +277,8 @@ namespace BankSystem.WinForms.Forms
 
         private async void btnWithdraw_Click(object sender, EventArgs e)
         {
-            if (boxAccNumWithdraw.SelectedIndex == -1)
+            if (!CurrentUser.HasPermission(BankPermission.Client) ||
+                boxAccNumWithdraw.SelectedIndex == -1)
             {
                 return;
             }
@@ -250,6 +299,10 @@ namespace BankSystem.WinForms.Forms
 
         private async void boxFromAccNum_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.Client) ||
+                !CurrentUser.HasPermission(BankPermission.Transfer))
+                return;
+
             if (boxFromAccNum.SelectedIndex == -1)
             {
                 boxToAccNum.SelectedIndex = -1;
@@ -281,6 +334,10 @@ namespace BankSystem.WinForms.Forms
 
         private async void boxToAccNum_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (!CurrentUser.HasPermission(BankPermission.Client) ||
+                !CurrentUser.HasPermission(BankPermission.Transfer))
+                return;
+
             if (boxToAccNum.SelectedIndex == -1)
             {
                 lblToCurrent.Visible = false;
@@ -293,7 +350,10 @@ namespace BankSystem.WinForms.Forms
 
         private async void btnTransfer_Click(object sender, EventArgs e)
         {
-            if (boxFromAccNum.SelectedIndex == -1 || boxToAccNum.SelectedIndex == -1)
+            if (!CurrentUser.HasPermission(BankPermission.Client) ||
+                !CurrentUser.HasPermission(BankPermission.Transfer) ||
+                boxFromAccNum.SelectedIndex == -1 ||
+                boxToAccNum.SelectedIndex == -1)
             {
                 return;
             }

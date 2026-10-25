@@ -352,6 +352,7 @@
             txtCode.Cursor = Cursors.IBeam;
             txtCode.Location = new Point(491, 454);
             txtCode.Name = "txtCode";
+            txtCode.UseSystemPasswordChar = true;
             txtCode.Size = new Size(212, 33);
             txtCode.TabIndex = 29;
             txtCode.Validating += txtBox_Validating;
@@ -671,6 +672,7 @@
             editCode.Cursor = Cursors.IBeam;
             editCode.Location = new Point(458, 453);
             editCode.Name = "editCode";
+            editCode.UseSystemPasswordChar = true;
             editCode.Size = new Size(212, 33);
             editCode.TabIndex = 54;
             // 
@@ -683,7 +685,7 @@
             label11.Name = "label11";
             label11.Size = new Size(102, 28);
             label11.TabIndex = 53;
-            label11.Text = "Pin Code";
+            label11.Text = "New PIN Code";
             // 
             // boxClientId
             // 

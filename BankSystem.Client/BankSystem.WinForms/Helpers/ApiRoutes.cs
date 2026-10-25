@@ -8,6 +8,12 @@ namespace BankSystem.WinForms.Helpers
 {
     public static class ApiRoutes
     {
+        public static class Auth
+        {
+            public const string Login = "Auth/login";
+            public const string Refresh = "Auth/refresh";
+            public const string Logout = "Auth/logout";
+        }
         public static class Client
         {
             public const string GetAll = "Client/All";
@@ -35,8 +41,7 @@ namespace BankSystem.WinForms.Helpers
 
         public static class Registration
         {
-            public const string GetAll = "Registeration/All";
-            public const string Add = "Registeration";
+            public const string GetAll = "Registration/LoginAttempts";
         }
 
         public static class Transfer
@@ -48,7 +53,6 @@ namespace BankSystem.WinForms.Helpers
         public static class User
         {
             public const string GetAll = "User/All";
-            public const string Login = "User/Login";
             public const string GetId = "User/{0}";
             public const string Update = "User/{0}";
             public const string Delete = "User/{0}";

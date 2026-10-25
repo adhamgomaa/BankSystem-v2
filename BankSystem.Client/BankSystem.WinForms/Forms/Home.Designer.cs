@@ -127,7 +127,7 @@
             btnUsers.Name = "btnUsers";
             btnUsers.Size = new Size(226, 57);
             btnUsers.TabIndex = 3;
-            btnUsers.Tag = "8";
+            btnUsers.Tag = "16";
             btnUsers.Text = "Manage Users";
             btnUsers.UseVisualStyleBackColor = false;
             btnUsers.Click += btnUsers_Click;
