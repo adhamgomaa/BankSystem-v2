@@ -1,245 +1,307 @@
-﻿# 🏦 Bank System v2
+# 🏦 Bank System v2
 
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 ![C#](https://img.shields.io/badge/C%23-Language-blue)
-![WinForms](https://img.shields.io/badge/UI-Windows%20Forms-green)
-![ASP.NET Core](https://img.shields.io/badge/API-ASP.NET%20Core-red)
-![SQL Server](https://img.shields.io/badge/Database-SQL%20Server-orange)
-![License](https://img.shields.io/badge/Status-Completed-brightgreen)
+![Windows%20Forms](https://img.shields.io/badge/UI-Windows%20Forms-green)
+![ASP.NET%20Core](https://img.shields.io/badge/API-ASP.NET%20Core-red)
+![SQL%20Server](https://img.shields.io/badge/Database-SQL%20Server-orange)
+![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
 
-A modern **Bank Management System** built with **C#**, **Windows Forms**, **ASP.NET Core Web API**, and **SQL Server** following a **Client-Server Architecture**.
+A modern bank management system built with C#, Windows Forms, ASP.NET Core Web API, and SQL Server. The project follows a layered client-server architecture where the desktop application speaks to a secure REST API instead of accessing the database directly.
 
-Version 2 is a complete redesign of the original desktop application. Instead of connecting directly to the database, the WinForms client now communicates with an ASP.NET Core Web API, making the system more scalable, maintainable, and easier to extend.
-
----
-
-# 📑 Table of Contents
-
-- Overview
-- Features
-- Architecture
-- Technologies
-- Security
-- Project Structure
-- Database
-- Screenshots
-- API Modules
-- Running the Project
-- Future Improvements
+This version improves maintainability by separating responsibilities into business logic, data access, DTOs, and API layers.
 
 ---
 
-# 📖 Overview
+# 📌 Overview
 
-The system enables bank employees to manage:
+The application is designed for bank operations and employee workflows, including:
 
-- People
-- Users
-- Clients
-- Bank Accounts
-- Deposits
-- Withdrawals
-- Transfers
-- Login History
-- Transfer History
+- People management
+- User management
+- Client and account management
+- Deposits and withdrawals
+- Internal transfers
+- Login and access auditing
+- Permission-based authorization
 
-The project follows a layered architecture that separates presentation, business logic, data access, and communication through REST APIs.
+The system is structured into multiple layers to keep the desktop UI, business rules, and persistence logic cleanly separated.
 
 ---
 
-# ⭐ Features
+# ✨ Features
 
-## Authentication
+## Authentication and security
 
-- Secure Login
-- Remember Me
-- SHA-256 Password Hashing
+- JWT-based authentication
+- Refresh token flow
+- Secure login and logout endpoints
+- Password validation and hashed credentials handling
+- Role/permission-based authorization
+- Rate limiting on sensitive endpoints
+- Login attempt tracking for audit and protection
 
----
+## User management
 
-## User Management
+- Create users
+- Update users
+- Delete users
+- Search by ID or username
+- List all users
+- View user permissions and activity status
 
-- Add User
-- Update User
-- Delete User
-- Search Users
-- View Login History
+## People management
 
----
+- Add people records
+- Update people records
+- List and search people
+- Track personal information linked to users and clients
 
-## People Management
+## Client and account management
 
-- Add Person
-- Edit Person
-- Search Person
-- Sort Records
+- Add new clients
+- Update client details
+- Search by ID or account number
+- View client balance
+- Get total bank balances
+- Deposit and withdraw operations
+- Account existence and validation checks
 
----
+## Transfer management
 
-## Client Management
+- Record transfer transactions
+- Fetch transfer history
+- Validate sender/receiver account data
+- Track transaction information with user references
 
-- Add Client
-- Edit Client
-- Search by Account Number
-- Display Current Balance
+## Audit and admin features
 
----
-
-## Banking Operations
-
-- Deposit
-- Withdraw
-- Transfer Between Accounts
-- View Transfer History
-- Display Total Bank Balances
-
----
-
-## Security
-
-- User Authentication
-- Permission-Based Access Control
-- Password Hashing (SHA-256)
-- Audit Trail
-
----
-
-## Auditing
-
-The system records:
-
-- Login History
-- Transfer Logs
-- Created By
-- Last Updated By
-- Creation Date
-- Last Update Date
+- Login attempt history
+- User activity and audit fields
+- Permission policy enforcement
+- Full access controls for administrative operations
 
 ---
 
 # 🏗️ Architecture
 
 ```text
-                +-------------------------+
-                |     WinForms Client     |
-                +-----------+-------------+
-                            |
-                        HttpClient
-                            |
-                            ▼
-                +-------------------------+
-                | ASP.NET Core Web API    |
-                +-----------+-------------+
-                            |
-                   Business Layer (BL)
-                            |
-                            ▼
-                +-------------------------+
-                | Data Access Layer (DAL) |
-                +-----------+-------------+
-                            |
-                            ▼
-                     SQL Server Database
++---------------------+
+| WinForms Client     |
+| BankSystem.WinForms |
++----------+----------+
+           |
+           | HTTP / API calls
+           v
++---------------------+
+| ASP.NET Core API    |
+| BankSystem.API      |
+| - Controllers       |
+| - JWT auth          |
+| - Authorization     |
+| - Rate limiting     |
++----------+----------+
+           |
+           | Business logic / services
+           v
++---------------------+
+| Business Layer      |
+| BankSystem.Business |
++----------+----------+
+           |
+           | Data access abstraction
+           v
++---------------------+
+| Data Access Layer   |
+| BankSystem.DataAccess |
++----------+----------+
+           |
+           | SQL Server
+           v
++---------------------+
+| SQL Server Database |
+| BankSystemData      |
++---------------------+
 ```
+
+This architecture is intentionally layered:
+
+- Presentation: Windows Forms UI
+- API: REST endpoints and security
+- Business: validation and transaction rules
+- Data access: SQL Server communication and repository logic
+- Shared/DTO layer: transport contracts and shared models
 
 ---
 
-# 🛠️ Technologies Used
+# 🛠️ Technology Stack
 
-### Programming
+## Frontend
 
 - C#
+- Windows Forms
 - .NET 8
 
-### Desktop
-
-- Windows Forms
-
-### Backend
+## Backend
 
 - ASP.NET Core Web API
-- RESTful APIs
-- Dependency Injection
+- JWT Authentication
+- Authorization policies
+- Rate limiting
+- Dependency injection
 
-### Database
+## Data and storage
 
 - SQL Server
-- ADO.NET
-- Stored Procedures
-- SQL Views
+- ADO.NET-based data layer
+- Stored procedures and database views
+- Transaction-based operations for banking logic
 
-### Client
+## Communication
 
-- HttpClient
-- DTO Pattern
-
-### Programming Concepts
-
-- Layered Architecture
-- Client-Server Architecture
-- Separation of Concerns
-- Service Layer
-- LINQ
-
-### Version Control
-
-- Git
-- GitHub
+- HttpClient for client-to-API requests
+- DTO-based request/response contracts
 
 ---
 
-# 🔐 Security
+# 🔐 Security model
 
-The application implements several security mechanisms:
+The API includes several protection mechanisms:
 
-- SHA-256 Password Hashing
-- Login Authentication
-- Permission-Based Authorization
-- Audit Logging
-- Separation between Client and Database through APIs
+- JWT access tokens with issuer/audience validation
+- Refresh token support for session renewal
+- Permission policies for sensitive sections such as users, clients, transfer operations, and people management
+- Login failure tracking and recent attempt inspection
+- API rate limiting to prevent abuse and brute-force attempts
+- Separation of the UI from the database through the API layer
+
+Sample permission groups in the project include:
+
+- People
+- Client
+- Transfer
+- Registration
+- User
+- FullAccess
 
 ---
 
-# 📂 Project Structure
+# 📡 API modules
 
-```
-BankSystem
-│
-├── BankSystem.Server
-│   ├── API
-│   ├── Business
-│   ├── DataAccess
-│   ├── DTOs
-│   └── Shared
-│
-├── BankSystem.Client
-│   └── WinForms
-│
-├── Database
-│
-├── Screenshots
-│
-└── README.md
-```
+The server exposes REST endpoints under the main controller groups:
+
+- `api/Auth` — login, refresh, logout
+- `api/User` — user listing, lookup, creation, updates, and deletion
+- `api/People` — person-related operations
+- `api/Client` — account, balance, deposit, and withdrawal operations
+- `api/Transfer` — transaction and transfer operations
+- `api/Registration` — recent login attempts and registration auditing
+
+This gives the WinForms client a clean API boundary instead of direct database access.
 
 ---
 
 # 🗄️ Database
 
-Main Tables
+The database is based on SQL Server and is initialized via the script in the `Database` folder:
+
+- `Database/database.sql`
+
+The schema includes banking entities such as:
 
 - People
 - Users
 - Clients
-- LoginRegister
-- TransferLogs
+- Transfers
+- Login attempts and audit data
 
-Database Features
+The project is designed around data integrity, access validation, and operational tracking across core banking actions.
 
-- Stored Procedures
-- SQL Views
-- Audit Information
-- Relationship Constraints
+---
+
+# 🚀 Getting started
+
+## Prerequisites
+
+- Visual Studio 2022 or later
+- .NET 8 SDK
+- SQL Server (LocalDB, Express, or developer instance)
+- Windows machine for WinForms desktop client
+
+## 1) Clone the repository
+
+```bash
+git clone https://github.com/adhamgomaa/BankSystem-v2.git
+cd BankSystem-v2
+```
+
+## 2) Restore the database
+
+Open the SQL script at:
+
+```text
+Database/database.sql
+```
+
+Execute it against a local SQL Server instance. The default database name expected by the project is:
+
+```text
+BankSystemData
+```
+
+## 3) Configure the API connection string
+
+Update `BankSystem.Server/BankSystem.API/appsettings.json` to match your SQL Server environment:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost,1433;Database=BankSystemData;User Id=sa;Password=YourPassword;TrustServerCertificate=True;"
+  },
+  "Jwt": {
+    "Issuer": "BankSystemAPI",
+    "Audience": "BankSystemClient",
+    "AccessTokenMinutes": 30,
+    "RefreshTokenDays": 7
+  }
+}
+```
+
+The API also requires a JWT signing key. Set it through environment variables or your development secrets:
+
+```powershell
+$env:Jwt__SigningKey = "YourVeryStrongSecretKeyAtLeast32BytesLong"
+```
+
+## 4) Run the server
+
+Open the server solution:
+
+```text
+BankSystem.Server/BankSystem.Server.sln
+```
+
+Then run `BankSystem.API`.
+
+## 5) Run the client
+
+Open the client solution:
+
+```text
+BankSystem.Client/BankSystem.Client.sln
+```
+
+The WinForms client reads the API base URL from its config:
+
+```json
+{
+  "ApiSettings": {
+    "BaseUrl": "https://localhost:7014/api/"
+  }
+}
+```
+
+Ensure the API is running on the same port configured in the client before logging in.
 
 ---
 
@@ -249,115 +311,46 @@ Database Features
 
 ![Login](Screenshots/Login.png)
 
----
-
 ## Home
 
 ![Home](Screenshots/Home.png)
-
----
 
 ## People Management
 
 ![People](Screenshots/People.png)
 
----
-
 ## Client Management
 
 ![Clients](Screenshots/Clients.png)
-
----
 
 ## Transactions
 
 ![Transactions](Screenshots/Transactions.png)
 
----
-
-## User Management
+## Users
 
 ![Users](Screenshots/Users.png)
 
 ---
 
-# 🚀 Running the Project
+# 📘 Notes
 
-## Requirements
+This project demonstrates a practical enterprise-style banking workflow with a clean desktop client and a REST API backend. It is useful as a reference for:
 
-- Visual Studio 2022
-- .NET 8 SDK
-- SQL Server
-
----
-
-## Clone Repository
-
-```bash
-git clone https://github.com/adhamgomaa/BankSystem-v2.git
-```
+- layered architecture in .NET
+- WinForms + API separation
+- JWT security implementation
+- SQL Server-backed business applications
+- permission-aware enterprise workflows
 
 ---
 
-## Database
+# 👨‍💻 Maintainer
 
-Restore the database using the SQL script located inside:
-
-```
-Database/
-```
-
----
-
-## Configure Server
-
-Update the connection string inside:
-
-```
-appsettings.json
-```
-
-Example:
-
-```json
-"ConnectionStrings": {
-    "DefaultConnection": "Your SQL Server Connection String"
-}
-```
-
----
-
-## Run
-
-1. Start the API.
-2. Run the WinForms Client.
-3. Login.
-4. Enjoy the system.
-
----
-
-# 🌟 Version 2 Improvements
-
-Compared to Version 1:
-
-- Client-Server Architecture
-- RESTful APIs
-- HttpClient Communication
-- DTO Layer
-- Dependency Injection
-- Better Separation of Concerns
-- Configurable Settings using appsettings.json
-- Improved Maintainability
-- Easier Future Expansion
-
----
-
-# 👨‍💻 Author
-
-**Adham Gomaa**
+This repository is maintained as a banking management sample project demonstrating a .NET client/server architecture.
 
 GitHub: https://github.com/adhamgomaa
 
 ---
 
-⭐ If you like this project, don't forget to give it a star!
+⭐ If you find this project useful, give it a star and share it with others.
