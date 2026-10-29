@@ -34,7 +34,6 @@
             pictureBox1 = new PictureBox();
             label1 = new Label();
             panel2 = new Panel();
-            lblAttempt = new Label();
             lblInvalid = new Label();
             groupBox1 = new GroupBox();
             btnLogin = new Button();
@@ -96,7 +95,6 @@
             // panel2
             // 
             panel2.AutoSize = true;
-            panel2.Controls.Add(lblAttempt);
             panel2.Controls.Add(lblInvalid);
             panel2.Controls.Add(groupBox1);
             panel2.Controls.Add(label1);
@@ -104,17 +102,6 @@
             panel2.Name = "panel2";
             panel2.Size = new Size(486, 636);
             panel2.TabIndex = 1;
-            // 
-            // lblAttempt
-            // 
-            lblAttempt.Font = new Font("Palatino Linotype", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblAttempt.ForeColor = Color.OrangeRed;
-            lblAttempt.Location = new Point(98, 567);
-            lblAttempt.Name = "lblAttempt";
-            lblAttempt.Size = new Size(350, 59);
-            lblAttempt.TabIndex = 5;
-            lblAttempt.Text = "You have 3 attempts before lock your account";
-            lblAttempt.Visible = false;
             // 
             // lblInvalid
             // 
@@ -255,7 +242,6 @@
         private CheckBox cbRemember;
         private TextBox txtPassword;
         private TextBox txtUserName;
-        private Label lblAttempt;
         private Label lblInvalid;
         private System.Windows.Forms.Timer timer1;
         private ErrorProvider errorProvider1;

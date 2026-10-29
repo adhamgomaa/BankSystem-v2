@@ -71,7 +71,6 @@ namespace BankSystem.WinForms.Forms
                 LoginResponseDTO? tokens = await _authService.LoginAsync(requestDTO);
                 if (tokens is not null)
                 {
-                    lblAttempt.Visible = false;
                     lblInvalid.Visible = false;
                     CurrentUser.SignIn(tokens, requestDTO.UserName);
                     Home home = new();
