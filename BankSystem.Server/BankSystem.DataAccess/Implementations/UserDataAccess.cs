@@ -1,4 +1,4 @@
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
@@ -7,248 +7,83 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BankSystem.DataAccess.Interfaces;
+using BankSystem.DataAccess.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankSystem.DataAccess.Implementations
 {
-    public sealed class UserDataAccess(DataAccessSettings settings) : IUserDataAccess
+    public sealed class UserDataAccess(BankDbContext context) : IUserDataAccess
     {
         public async Task<User?> GetUserAsync(int id, CancellationToken cancellationToken)
         {
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_FindUserById", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@userId", id);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                            {
-                                return new User
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("UserID")),
-                                    reader.GetInt32(reader.GetOrdinal("PersonID")),
-                                    reader.GetString(reader.GetOrdinal("UserName")),
-                                    reader.GetString(reader.GetOrdinal("Password")),
-                                    reader.GetInt32(reader.GetOrdinal("Permissions")),
-                                    reader.GetBoolean(reader.GetOrdinal("isActive"))
-                                );
-                            }
-                            else
-                                return null;
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            var user = await context.Users.FindAsync([id], cancellationToken: cancellationToken);
+            return user;
         }     
         public async Task<User?> GetUserAsync(string username, CancellationToken cancellationToken)
         {
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_FindUserByUsername", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@username", username);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                            {
-                                return new User
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("UserID")),
-                                    reader.GetInt32(reader.GetOrdinal("PersonID")),
-                                    reader.GetString(reader.GetOrdinal("UserName")),
-                                    reader.GetString(reader.GetOrdinal("Password")),
-                                    reader.GetInt32(reader.GetOrdinal("Permissions")),
-                                    reader.GetBoolean(reader.GetOrdinal("isActive"))
-                                );
-                            }
-                            else
-                                return null;
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            var user = await context.Users.AsNoTracking().SingleOrDefaultAsync(u => u.UserName == username, cancellationToken);
+            return user;
         } 
         public async Task<int> AddNewUserAsync(User newUser, CancellationToken cancellationToken)
         {
-            int userId = -1;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_AddNewUser", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@personId", newUser.personId);
-                        command.Parameters.AddWithValue("@username", newUser.username);
-                        command.Parameters.AddWithValue("@password", newUser.password);
-                        command.Parameters.AddWithValue("@permission", newUser.permissions);
-                        command.Parameters.AddWithValue("@isActive", newUser.isActive);
-                        SqlParameter outputId = new SqlParameter("@userId", SqlDbType.Int)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        command.Parameters.Add(outputId);
-                        await connection.OpenAsync(cancellationToken);
-                        await command.ExecuteNonQueryAsync(cancellationToken);
-                        userId = (int)outputId.Value;
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return userId;
+            context.Users.Add(newUser);
+            await context.SaveChangesAsync(cancellationToken);
+            return newUser.UserID;
         }
         public async Task<bool> UpdateUserAsync(User updateUser, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_UpdateUser", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@personId", updateUser.personId);
-                        command.Parameters.AddWithValue("@username", updateUser.username);
-                        command.Parameters.AddWithValue("@password", updateUser.password);
-                        command.Parameters.AddWithValue("@permission", updateUser.permissions);
-                        command.Parameters.AddWithValue("@isActive", updateUser.isActive);
-                        command.Parameters.AddWithValue("@userId", updateUser.userId);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var user = await context.Users.FindAsync([updateUser.UserID], cancellationToken);
+            if(user is null)
+                return false;
+            user.UserName = updateUser.UserName;
+            user.Password = updateUser.Password;
+            user.Permissions = updateUser.Permissions;
+            user.PersonID = updateUser.PersonID;
+            user.IsActive = updateUser.IsActive;
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
         public async Task<bool> DeleteUserAsync(int userId, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_DeleteUser", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@userId", userId);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var user = await context.Users.FindAsync([userId], cancellationToken);
+            if(user is null)
+                return false;
+            context.Users.Remove(user);
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
         public async Task<List<UserView>> GetAllUsersAsync(CancellationToken cancellationToken)
         {
-            List<UserView> users = new List<UserView>();
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_GetAllUsers", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
+            var users = await context.Users
+                        .AsNoTracking()
+                        .Select(u => new UserView
                         {
-                            while (await reader.ReadAsync(cancellationToken))
-                            {
-                                users.Add(new UserView
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("UserID")),
-                                    reader.GetInt32(reader.GetOrdinal("PersonID")),
-                                    reader.GetString(reader.GetOrdinal("UserName")),
-                                    reader.GetString(reader.GetOrdinal("Full Name")),
-                                    reader.GetString(reader.GetOrdinal("Email")),
-                                    reader.GetString(reader.GetOrdinal("Phone")),
-                                    reader.GetInt32(reader.GetOrdinal("Permissions")),
-                                    reader.GetBoolean(reader.GetOrdinal("isActive"))
-                                ));
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+                            UserId = u.UserID,
+                            PersonId = u.PersonID,
+                            Username = u.UserName,
+                            FullName = u.Person.FirstName + " " + u.Person.SecondName + " " + u.Person.LastName,
+                            Phone = u.Person.Phone,
+                            Email = u.Person.Email,
+                            Permissions = u.Permissions,
+                            IsActive = u.IsActive
+                        })
+                        .OrderBy(u => u.UserId)
+                        .ToListAsync(cancellationToken);
             return users;
+        }
+
+        public async Task<int> GetCount(CancellationToken cancellationToken)
+        {
+            int count = await context.Users.AsNoTracking().CountAsync(cancellationToken);
+            return count;
         }
         public async Task<bool> UserIsExistAsync(int userId, CancellationToken cancellationToken)
         {
-            bool isExist = false;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_IsUserExist", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@userId", userId);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                            {
-                                isExist = true;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            bool isExist = await context.Users.AsNoTracking().AnyAsync(u => u.UserID == userId, cancellationToken);
             return isExist;
         }
 
         public async Task<bool> UserIsExistAsync(string username, CancellationToken cancellationToken)
         {
-            bool isExist = false;
-            try
-            {
-                await using SqlConnection connection = new(settings.ConnectionString);
-                await using SqlCommand command = new("SP_User_IsUsernameExist", connection);
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.AddWithValue("@username", username);
-                await connection.OpenAsync(cancellationToken);
-                await using SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
-                    if (await reader.ReadAsync(cancellationToken))
-                        isExist = true;
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            bool isExist = await context.Users.AsNoTracking().AnyAsync(u => u.UserName == username, cancellationToken);
             return isExist;
         }
     }

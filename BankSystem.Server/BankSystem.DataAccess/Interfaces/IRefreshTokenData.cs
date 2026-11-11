@@ -1,14 +1,11 @@
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.DataAccess.Interfaces;
 
 public interface IRefreshTokenData
 {
     Task<int> AddAsync(
-        int userId,
-        string tokenHash,
-        DateTime expiresAt,
-        Guid tokenFamilyId,
+        RefreshToken newToken,
         CancellationToken cancellationToken);
 
     Task<RefreshToken?> GetByHashAsync(string tokenHash, CancellationToken cancellationToken);

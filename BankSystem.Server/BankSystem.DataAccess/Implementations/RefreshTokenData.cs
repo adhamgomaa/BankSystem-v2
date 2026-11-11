@@ -1,82 +1,42 @@
 using System.Data;
-using BankSystem.DataAccess;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using BankSystem.DataAccess.Interfaces;
 using Microsoft.Data.SqlClient;
+using BankSystem.DataAccess.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankSystem.DataAccess.Implementations;
 
-public sealed class RefreshTokenData(DataAccessSettings settings) : IRefreshTokenData
+public sealed class RefreshTokenData(BankDbContext context) : IRefreshTokenData
 {
     public async Task<int> AddAsync(
-        int userId,
-        string tokenHash,
-        DateTime expiresAt,
-        Guid tokenFamilyId,
+        RefreshToken newToken,
         CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(settings.ConnectionString);
-        await using var command = new SqlCommand("SP_RefreshTokens_AddNew", connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-        command.Parameters.Add("@UserId", SqlDbType.Int).Value = userId;
-        command.Parameters.Add("@TokenHash", SqlDbType.Char, 64).Value = tokenHash;
-        command.Parameters.Add("@ExpiresAt", SqlDbType.DateTime2).Value = expiresAt;
-        command.Parameters.Add("@TokenFamilyId", SqlDbType.UniqueIdentifier).Value = tokenFamilyId;
-        var refreshTokenId = command.Parameters.Add("@RefreshTokenId", SqlDbType.Int);
-        refreshTokenId.Direction = ParameterDirection.Output;
-
-        await connection.OpenAsync(cancellationToken);
-        await command.ExecuteNonQueryAsync(cancellationToken);
-
-        return refreshTokenId.Value is int id
-            ? id
-            : throw new InvalidOperationException("The add-refresh-token procedure did not return a refresh token ID.");
+        context.RefreshTokens.Add(newToken);
+        await context.SaveChangesAsync(cancellationToken);
+        return newToken.RefreshTokenId;
     }
 
     public async Task<RefreshToken?> GetByHashAsync(
         string tokenHash,
         CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(settings.ConnectionString);
-        await using var command = new SqlCommand("SP_RefreshTokens_GetByHash", connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-        command.Parameters.Add("@TokenHash", SqlDbType.Char, 64).Value = tokenHash;
-
-        await connection.OpenAsync(cancellationToken);
-        await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
-        if (!await reader.ReadAsync(cancellationToken))
-        {
-            return null;
-        }
-
-        return new RefreshToken
-        {
-            RefreshTokenId = reader.GetInt32(reader.GetOrdinal("RefreshTokenId")),
-            UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
-            TokenHash = reader.GetString(reader.GetOrdinal("TokenHash")),
-            CreatedAt = ReadUtcDateTime(reader, "CreatedAt"),
-            ExpiresAt = ReadUtcDateTime(reader, "ExpiresAt"),
-            RevokedAt = reader.GetValue(reader.GetOrdinal("RevokedAt")) == DBNull.Value ? null : ReadUtcDateTime(reader, "RevokedAt"),
-            ReplacedByTokenId = reader.GetValue(reader.GetOrdinal("ReplacedByTokenId")) is int replacedByTokenId ? replacedByTokenId : null,
-            TokenFamilyId = reader.GetGuid(reader.GetOrdinal("TokenFamilyId"))
-        };
+        var token = await context.RefreshTokens
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(rt => rt.TokenHash == tokenHash, cancellationToken);
+        return token;
     }
 
     public async Task RevokeAsync(string tokenHash, CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(settings.ConnectionString);
-        await using var command = new SqlCommand("SP_RefreshTokens_Revoke", connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-        command.Parameters.Add("@TokenHash", SqlDbType.Char, 64).Value = tokenHash;
-
-        await connection.OpenAsync(cancellationToken);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        var token = await context.RefreshTokens
+                    .Where(rt => rt.RevokedAt == null && rt.TokenHash == tokenHash)
+                    .SingleOrDefaultAsync(cancellationToken);
+        if(token is null)
+            return;
+        token.RevokedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task RevokeFamilyAsync(
@@ -84,16 +44,10 @@ public sealed class RefreshTokenData(DataAccessSettings settings) : IRefreshToke
         Guid tokenFamilyId,
         CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(settings.ConnectionString);
-        await using var command = new SqlCommand("SP_RefreshTokens_RevokeFamily", connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-        command.Parameters.Add("@UserId", SqlDbType.Int).Value = userId;
-        command.Parameters.Add("@TokenFamilyId", SqlDbType.UniqueIdentifier).Value = tokenFamilyId;
-
-        await connection.OpenAsync(cancellationToken);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        var token = await context.RefreshTokens
+                    .Where(rt => rt.RevokedAt == null && rt.UserId == userId && rt.TokenFamilyId == tokenFamilyId)
+                    .ExecuteUpdateAsync(setter =>
+                                            setter.SetProperty(s => s.RevokedAt, DateTime.UtcNow), cancellationToken);
     }
 
     public async Task<int> RotateAsync(
@@ -103,31 +57,36 @@ public sealed class RefreshTokenData(DataAccessSettings settings) : IRefreshToke
         DateTime newExpiresAt,
         CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(settings.ConnectionString);
-        await using var command = new SqlCommand("SP_RefreshTokens_Rotate", connection)
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            CommandType = CommandType.StoredProcedure
-        };
-        command.Parameters.Add("@OldRefreshTokenId", SqlDbType.Int).Value = oldRefreshTokenId;
-        command.Parameters.Add("@OldTokenHash", SqlDbType.Char, 64).Value = oldTokenHash;
-        command.Parameters.Add("@NewTokenHash", SqlDbType.Char, 64).Value = newTokenHash;
-        command.Parameters.Add("@NewExpiresAtUtc", SqlDbType.DateTime2).Value = newExpiresAt;
-        var newRefreshTokenId = command.Parameters.Add("@NewRefreshTokenId", SqlDbType.Int);
-        newRefreshTokenId.Direction = ParameterDirection.Output;
+            DateTime dateNow = DateTime.UtcNow;
+            var oldToken = await context.RefreshTokens
+                        .Where(rt => rt.RefreshTokenId == oldRefreshTokenId && rt.TokenHash == oldTokenHash 
+                                && rt.RevokedAt == null && rt.ExpiresAt > dateNow)
+                        .Select(rt => new RefreshToken
+                        {
+                            UserId = rt.UserId,
+                            TokenFamilyId = rt.TokenFamilyId,
+                            TokenHash = newTokenHash,
+                            ExpiresAt = newExpiresAt
+                        }).FirstOrDefaultAsync(cancellationToken);
 
-        await connection.OpenAsync(cancellationToken);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+            int newRefreshTokenId = await AddAsync(oldToken!, cancellationToken);
 
-        return newRefreshTokenId.Value is int id ? id : 0;
-    }
-
-    private static DateTime ReadUtcDateTime(SqlDataReader reader, string columnName)
-    {
-        var value = reader.GetValue(reader.GetOrdinal(columnName));
-        return value switch
+            var token = await context.RefreshTokens
+                            .Where(rt => rt.RevokedAt == null && rt.RefreshTokenId == oldRefreshTokenId 
+                                    && rt.ExpiresAt > dateNow)
+                            .FirstOrDefaultAsync(cancellationToken);
+            token!.RevokedAt = dateNow;
+            token.ReplacedByTokenId = newRefreshTokenId;
+            await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return newRefreshTokenId;
+        } catch
         {
-            DateTime dateTime => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
-            _ => throw new InvalidCastException($"Column '{columnName}' must contain a SQL date/time value.")
-        };
+            await transaction.RollbackAsync(cancellationToken);
+            return -1;
+        }
     }
 }

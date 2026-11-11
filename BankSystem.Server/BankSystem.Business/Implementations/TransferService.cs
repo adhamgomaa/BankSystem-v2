@@ -1,6 +1,6 @@
 using BankSystem.Business.Interfaces;
 using BankSystem.DataAccess.Interfaces;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Implementations
 {

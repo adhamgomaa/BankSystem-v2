@@ -10,20 +10,12 @@ namespace BankSystem.DTOs.Transfer
     public class CreateTransferDTO
     {
         [Required]
-        public int senderAccount { get; set; }
+        public int SenderAccount { get; set; }
         [Required]
-        public int receiverAccount { get; set; }
+        public int ReceiverAccount { get; set; }
         [Required]
-        public decimal amount { get; set; }
+        public decimal Amount { get; set; }
         [Required]
-        public int userId { get; set; }
-
-        public CreateTransferDTO()
-        {
-            senderAccount = 0;
-            receiverAccount = 0;
-            amount = 0;
-            userId = -1;
-        }
+        public int UserId { get; set; }
     }
 }

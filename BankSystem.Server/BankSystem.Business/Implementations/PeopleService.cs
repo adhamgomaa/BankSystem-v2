@@ -1,6 +1,6 @@
 using BankSystem.Business.Interfaces;
 using BankSystem.DataAccess.Interfaces;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Implementations
 {
@@ -8,8 +8,8 @@ namespace BankSystem.Business.Implementations
     {
         public async Task<bool> AddNewPersonAsync(Person newPerson, CancellationToken cancellationToken)
         {
-            newPerson.personId = await peopleDataAccess.AddNewPersonAsync(newPerson, cancellationToken);
-            return newPerson.personId != -1;
+            await peopleDataAccess.AddNewPersonAsync(newPerson, cancellationToken);
+            return newPerson.PersonID != -1;
         }
         public Task<bool> UpdatePersonAsync(Person updatePerson, CancellationToken cancellationToken) =>
             peopleDataAccess.UpdatePersonAsync(updatePerson, cancellationToken);

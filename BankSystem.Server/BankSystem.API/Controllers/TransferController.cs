@@ -1,7 +1,6 @@
-﻿using BankSystem.Business;
-using BankSystem.Business.Interfaces;
+﻿using BankSystem.Business.Interfaces;
 using BankSystem.DTOs.Transfer;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using BankSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -24,12 +23,12 @@ namespace BankSystem.API.Controllers
                 return NotFound("No Transfers Found");
             var transferDTO = transfers.Select(transfer => new TransferDTO
             {
-                transferId = transfer.transferId,
-                transferDate = transfer.transferDate,
-                senderAccount = transfer.senderAccount,
-                receiverAccount = transfer.receiverAccount,
-                amount = transfer.amount,
-                userId = transfer.userId
+                TransferId = transfer.TransferID,
+                TransferDate = transfer.TransferDate,
+                SenderAccount = transfer.SenderAcc,
+                ReceiverAccount = transfer.ReceiverAcc,
+                Amount = transfer.Amount,
+                UserId = transfer.CreatedByUserID
             });
             return Ok(transferDTO);
         }
@@ -41,12 +40,12 @@ namespace BankSystem.API.Controllers
             CreateTransferDTO createTransfer,
             CancellationToken cancellationToken)
         {
-            Transfer newTransfer = new Transfer
+            Transfer newTransfer = new()
             {
-                senderAccount = createTransfer.senderAccount,
-                receiverAccount = createTransfer.receiverAccount,
-                amount = createTransfer.amount,
-                userId = createTransfer.userId,
+                SenderAcc = createTransfer.SenderAccount,
+                ReceiverAcc = createTransfer.ReceiverAccount,
+                Amount = createTransfer.Amount,
+                CreatedByUserID = createTransfer.UserId,
             };
 
             if (!await transferService.AddNewTransferAsync(newTransfer, cancellationToken))

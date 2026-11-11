@@ -10,23 +10,14 @@ namespace BankSystem.DTOs.Users
     public class UpdateUserDTO
     {
         [Required]
-        public int personId { get; set; }
+        public int PersonId { get; set; }
         [Required]
-        public string username { get; set; }
+        public required string Username { get; set; }
         [Required]
-        public string password { get; set; }
+        public required string Password { get; set; }
         [Required]
-        public int permissions { get; set; }
+        public int Permissions { get; set; }
         [Required]
-        public bool isActive { get; set; }
-
-        public UpdateUserDTO()
-        {
-            personId = -1;
-            username = string.Empty;
-            password = string.Empty;
-            permissions = 0;
-            isActive = false;
-        }
+        public bool IsActive { get; set; }
     }
 }

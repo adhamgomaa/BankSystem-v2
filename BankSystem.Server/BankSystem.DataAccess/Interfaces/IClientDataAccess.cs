@@ -1,4 +1,4 @@
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.DataAccess.Interfaces;
 
@@ -10,6 +10,7 @@ public interface IClientDataAccess
     Task<bool> UpdateClientAsync(Client updatedClient, CancellationToken cancellationToken);
     Task<bool> DeleteClientAsync(int clientId, CancellationToken cancellationToken);
     Task<List<ClientView>> GetAllClientsAsync(CancellationToken cancellationToken);
+    Task<int> GetCountAsync(CancellationToken cancellationToken);
     Task<bool> ClientIsExistAsync(int clientId, CancellationToken cancellationToken);
     Task<decimal> GetBalanceByAccountNumberAsync(int accountNumber, CancellationToken cancellationToken);
     Task<decimal> GetTotalBalancesAsync(CancellationToken cancellationToken);

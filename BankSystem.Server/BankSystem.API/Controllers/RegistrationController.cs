@@ -1,6 +1,5 @@
 using BankSystem.Business.Interfaces;
 using BankSystem.DTOs.Auth;
-using BankSystem.Shared;
 using BankSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;

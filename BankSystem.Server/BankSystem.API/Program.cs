@@ -1,5 +1,4 @@
-using BankSystem.DataAccess;
-using BankSystem.Business;
+using BankSystem.DataAccess.Data;
 using BankSystem.API.Configuration;
 using BankSystem.API.Authorization;
 using BankSystem.API.Interfaces;
@@ -10,8 +9,8 @@ using BankSystem.DataAccess.Interfaces;
 using BankSystem.DataAccess.Implementations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Globalization;
@@ -44,7 +43,8 @@ if (jwtSettings.AccessTokenMinutes <= 0 || jwtSettings.RefreshTokenDays <= 0)
 }
 
 builder.Services.AddSingleton(jwtSettings);
-builder.Services.AddSingleton(new DataAccessSettings(connectionString));
+builder.Services.AddDbContext<BankDbContext>(options =>
+    options.UseSqlServer(connectionString));
 builder.Services.AddScoped<IUserDataAccess, UserDataAccess>();
 builder.Services.AddScoped<IPeopleDataAccess, PeopleDataAccess>();
 builder.Services.AddScoped<IClientDataAccess, ClientDataAccess>();

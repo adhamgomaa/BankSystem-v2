@@ -10,39 +10,18 @@ namespace BankSystem.DTOs.People
     public class CreatePersonDTO
     {
         [Required]
-        public string firstName { get; set; }
+        public required string FirstName { get; set; }
         [Required]
-        public string secondName { get; set; }
+        public required string SecondName { get; set; }
         [Required]
-        public string lastName { get; set; }
+        public required string LastName { get; set; }
         [Required]
-        public string email { get; set; }
+        public required string Email { get; set; }
         [Required]
-        public string phone { get; set; }
+        public required string Phone { get; set; }
         [Required]
-        public byte gender { get; set; }
+        public bool Gender { get; set; }
         [Required]
-        public DateTime birthDate { get; set; }
-        public CreatePersonDTO()
-        {
-            firstName = string.Empty;
-            secondName = string.Empty;
-            lastName = string.Empty;
-            email = string.Empty;
-            phone = string.Empty;
-            gender = 0;
-            birthDate = DateTime.Now;
-        }
-
-        public CreatePersonDTO(string firstName, string secondName, string lastName, string email, string phone, byte gender, DateTime date)
-        {
-            this.firstName = firstName;
-            this.secondName = secondName;
-            this.lastName = lastName;
-            this.email = email;
-            this.phone = phone;
-            this.gender = gender;
-            this.birthDate = date;
-        }
+        public DateTime BirthDate { get; set; }
     }
 }

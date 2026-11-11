@@ -1,6 +1,6 @@
 using BankSystem.Business.Interfaces;
 using BankSystem.DataAccess.Interfaces;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Implementations
 {
@@ -8,16 +8,16 @@ namespace BankSystem.Business.Implementations
     {
         public async Task<bool> AddUserAsync(User newUser, CancellationToken cancellationToken)
         {
-            if (await userDataAccess.UserIsExistAsync(newUser.username, cancellationToken))
+            if (await userDataAccess.UserIsExistAsync(newUser.UserName, cancellationToken))
                 return false;
-            newUser.password = PasswordHasher.HashPassword(newUser.password);
-            newUser.userId = await userDataAccess.AddNewUserAsync(newUser, cancellationToken);
-            return newUser.userId != -1;
+            newUser.Password = PasswordHasher.HashPassword(newUser.Password);
+            await userDataAccess.AddNewUserAsync(newUser, cancellationToken);
+            return newUser.UserID != -1;
         }
 
         public async Task<bool> UpdateUserAsync(User updatedUser, CancellationToken cancellationToken)
         {
-            updatedUser.password = PasswordHasher.HashPassword(updatedUser.password);
+            updatedUser.Password = PasswordHasher.HashPassword(updatedUser.Password);
             return await userDataAccess.UpdateUserAsync(updatedUser, cancellationToken);
         }
 
@@ -33,10 +33,8 @@ namespace BankSystem.Business.Implementations
         public Task<List<UserView>> GetAllUsersAsync(CancellationToken cancellationToken) =>
             userDataAccess.GetAllUsersAsync(cancellationToken);
 
-        public async Task<int> UsersCountAsync(CancellationToken cancellationToken)
-        {
-            return (await GetAllUsersAsync(cancellationToken)).Count;
-        }
+        public Task<int> UsersCountAsync(CancellationToken cancellationToken) =>
+            userDataAccess.GetCount(cancellationToken);
 
         public Task<bool> IsUserExistAsync(int userId, CancellationToken cancellationToken) =>
             userDataAccess.UserIsExistAsync(userId, cancellationToken);

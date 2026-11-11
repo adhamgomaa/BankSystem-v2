@@ -1,6 +1,6 @@
 using BankSystem.Business.Interfaces;
 using BankSystem.DataAccess.Interfaces;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Implementations
 {
@@ -8,8 +8,8 @@ namespace BankSystem.Business.Implementations
     {
         public async Task<bool> AddNewClientAsync(Client newClient, CancellationToken cancellationToken)
         {
-            newClient.clientId = await clientDataAccess.AddNewClientAsync(newClient, cancellationToken);
-            return newClient.clientId != -1;
+            await clientDataAccess.AddNewClientAsync(newClient, cancellationToken);
+            return newClient.ClientID != -1;
         }
 
         public Task<bool> UpdateClientAsync(Client updatedClient, CancellationToken cancellationToken) =>
@@ -26,10 +26,8 @@ namespace BankSystem.Business.Implementations
         public Task<List<ClientView>> GetAllClientsAsync(CancellationToken cancellationToken) =>
             clientDataAccess.GetAllClientsAsync(cancellationToken);
 
-        public async Task<int> GetAllClientsCountAsync(CancellationToken cancellationToken)
-        {
-            return (await GetAllClientsAsync(cancellationToken)).Count;
-        }
+        public Task<int> GetAllClientsCountAsync(CancellationToken cancellationToken) =>
+            clientDataAccess.GetCountAsync(cancellationToken);
 
         public Task<bool> IsClientExistAsync(int clientId, CancellationToken cancellationToken) =>
             clientDataAccess.ClientIsExistAsync(clientId, cancellationToken);

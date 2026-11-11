@@ -1,5 +1,5 @@
 using Microsoft.Data.SqlClient;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,77 +7,54 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BankSystem.DataAccess.Interfaces;
+using BankSystem.DataAccess.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankSystem.DataAccess.Implementations
 {
-    public sealed class TransferDataAccess(DataAccessSettings settings) : ITransferDataAccess
+    public sealed class TransferDataAccess(BankDbContext context) : ITransferDataAccess
     {
         public async Task<List<Transfer>> GetAllTransferAsync(CancellationToken cancellationToken)
         {
-            List<Transfer> list = new List<Transfer>();
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_TransferLog", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            while (await reader.ReadAsync(cancellationToken))
+            var transfers = await context.Transfers
+                            .AsNoTracking()
+                            .Select(t => new Transfer
                             {
-                                list.Add(new Transfer
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("TransferID")),
-                                    reader.GetDateTime(reader.GetOrdinal("TransferDate")),
-                                    reader.GetInt32(reader.GetOrdinal("SenderAcc")),
-                                    reader.GetInt32(reader.GetOrdinal("ReceiverAcc")),
-                                    reader.GetDecimal(reader.GetOrdinal("Amount")),
-                                    reader.GetInt32(reader.GetOrdinal("CreatedByUserID"))
-                                ));
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return list;
+                                TransferID = t.TransferID,
+                                TransferDate = t.TransferDate,
+                                SenderAcc = t.SenderAcc,
+                                ReceiverAcc = t.ReceiverAcc,
+                                Amount = t.Amount,
+                                CreatedByUserID = t.CreatedByUserID
+                            })
+                            .OrderBy(t => t.TransferDate)
+                            .ToListAsync(cancellationToken);
+            return transfers;
         }
 
         public async Task<bool> AddNewTransferAsync(Transfer newTransfer, CancellationToken cancellationToken)
         {
-            int transferId = -1;
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_Transfer", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@FromAccNum", newTransfer.senderAccount);
-                        command.Parameters.AddWithValue("@ToAccNum", newTransfer.receiverAccount);
-                        command.Parameters.AddWithValue("@amount", newTransfer.amount);
-                        command.Parameters.AddWithValue("@userId", newTransfer.userId);
-                        SqlParameter outputId = new SqlParameter("@transferId", SqlDbType.Int)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        command.Parameters.Add(outputId);
-                        await connection.OpenAsync(cancellationToken);
-                        await command.ExecuteNonQueryAsync(cancellationToken);
-                        transferId = (int)outputId.Value;
-                    }
-                }
-            }
-            catch (SqlException)
+                var Sender = await context.Clients
+                                .SingleOrDefaultAsync(c => c.AccountNumber == newTransfer.SenderAcc, cancellationToken);
+                var Receiver = await context.Clients
+                                .SingleOrDefaultAsync(c => c.AccountNumber == newTransfer.ReceiverAcc, cancellationToken);
+                if (Sender is null || Receiver is null || Sender.Balance < newTransfer.Amount)
+                    return false;
+
+                Sender.Balance -= newTransfer.Amount;
+                Receiver.Balance += newTransfer.Amount;
+                context.Transfers.Add(newTransfer);
+                await context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return newTransfer.TransferID != -1;
+            } catch
             {
-                throw;
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
             }
-            return transferId != -1;
         }
     }
 }

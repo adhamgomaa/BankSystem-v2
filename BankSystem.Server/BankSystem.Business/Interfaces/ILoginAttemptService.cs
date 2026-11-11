@@ -1,14 +1,11 @@
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Interfaces;
 
 public interface ILoginAttemptService
 {
     Task RecordAsync(
-        int? userId,
-        string attemptedUserName,
-        bool succeeded,
-        string? clientIpAddress,
+        LoginAttempt newLogin,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<LoginAttempt>> GetRecentAsync(

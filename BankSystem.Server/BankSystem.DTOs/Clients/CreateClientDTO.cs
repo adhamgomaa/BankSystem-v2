@@ -10,27 +10,12 @@ namespace BankSystem.DTOs.Clients
     public class CreateClientDTO
     {
         [Required]
-        public int accountNumber { get; set; }
+        public int AccountNumber { get; set; }
         [Required]
-        public int personId { get; set; }
+        public int PersonId { get; set; }
         [Required]
-        public int pinCode { get; set; }
+        public int PinCode { get; set; }
         [Required]
-        public decimal balance { get; set; }
-        public CreateClientDTO()
-        {
-            accountNumber = 0;
-            personId = -1;
-            pinCode = 0;
-            balance = 0;
-        }
-
-        public CreateClientDTO(int accountNumber, int personId, int pinCode, decimal balance)
-        {
-            this.accountNumber = accountNumber;
-            this.personId = personId;
-            this.pinCode = pinCode;
-            this.balance = balance;
-        }
+        public decimal Balance { get; set; }
     }
 }

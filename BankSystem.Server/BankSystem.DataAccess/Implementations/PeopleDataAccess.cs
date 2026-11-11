@@ -1,208 +1,72 @@
-using BankSystem.Shared;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
+using BankSystem.Shared.Entities;
 using System.Data;
-using System.Linq;
-using System.Numerics;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using BankSystem.DataAccess.Interfaces;
+using BankSystem.DataAccess.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankSystem.DataAccess.Implementations
 {
-    public sealed class PeopleDataAccess(DataAccessSettings settings) : IPeopleDataAccess
+    public sealed class PeopleDataAccess(BankDbContext context) : IPeopleDataAccess
     {
         public async Task<Person?> GetPersonAsync(int id, CancellationToken cancellationToken)
         {
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_FindPersonById", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@personId", id);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                            {
-                                return new Person
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("PersonID")),
-                                    reader.GetString(reader.GetOrdinal("FirstName")),
-                                    reader.GetString(reader.GetOrdinal("SecondName")),
-                                    reader.GetString(reader.GetOrdinal("LastName")),
-                                    reader.GetString(reader.GetOrdinal("Email")),
-                                    reader.GetString(reader.GetOrdinal("Phone")),
-                                    reader.GetByte(reader.GetOrdinal("Gender")),
-                                    reader.GetDateTime(reader.GetOrdinal("BirthDate"))
-                                );
-                            }
-                            else
-                                return null;
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            var student = await context.People.FindAsync([id], cancellationToken: cancellationToken);
+            return student;
         }
 
         public async Task<int> AddNewPersonAsync(Person newPerson, CancellationToken cancellationToken)
         {
-            int personId = -1;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_AddPerson", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@fname", newPerson.firstName);
-                        command.Parameters.AddWithValue("@secname", newPerson.secondName);
-                        command.Parameters.AddWithValue("@lname", newPerson.lastName);
-                        command.Parameters.AddWithValue("@email", newPerson.email);
-                        command.Parameters.AddWithValue("@phone", newPerson.phone);
-                        command.Parameters.AddWithValue("@gender", newPerson.gender);
-                        command.Parameters.AddWithValue("@date", newPerson.birthDate);
-                        SqlParameter outputId = new SqlParameter("@personId", SqlDbType.Int)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        command.Parameters.Add(outputId);
-                        await connection.OpenAsync(cancellationToken);
-                        await command.ExecuteNonQueryAsync(cancellationToken);
-                        personId = (int)outputId.Value;
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return personId;
+            context.People.Add(newPerson);
+            await context.SaveChangesAsync(cancellationToken);
+            return newPerson.PersonID;
         }
 
         public async Task<bool> UpdatePersonAsync(Person updatePerson, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_UpdatePerson", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@fname", updatePerson.firstName);
-                        command.Parameters.AddWithValue("@secname", updatePerson.secondName);
-                        command.Parameters.AddWithValue("@lname", updatePerson.lastName);
-                        command.Parameters.AddWithValue("@email", updatePerson.email);
-                        command.Parameters.AddWithValue("@phone", updatePerson.phone);
-                        command.Parameters.AddWithValue("@gender", updatePerson.gender);
-                        command.Parameters.AddWithValue("@date", updatePerson.birthDate);
-                        command.Parameters.AddWithValue("@personId", updatePerson.personId);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var person = await context.People.FindAsync([updatePerson.PersonID], cancellationToken: cancellationToken);
+            if (person is null)
+                return false;
+            person.FirstName = updatePerson.FirstName;
+            person.SecondName = updatePerson.SecondName;
+            person.LastName = updatePerson.LastName;
+            person.Email = updatePerson.Email;
+            person.Phone = updatePerson.Phone;
+            person.Gender = updatePerson.Gender;
+            person.BirthDate = updatePerson.BirthDate;
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
 
         public async Task<bool> DeletePersonAsync(int id, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_DeletePerson", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@personId", id);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var person = await context.People.FindAsync([id], cancellationToken: cancellationToken);
+            if (person is null)
+                return false;
+            context.People.Remove(person);
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
 
         public async Task<bool> IsPersonExistAsync(int id, CancellationToken cancellationToken)
         {
-            bool isFound = false;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_IsPersonExist", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@personId", id);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                                isFound = true;
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return isFound;
+            bool isExist = await context.People.AnyAsync(p => p.PersonID == id, cancellationToken);
+            return isExist;
         }
 
         public async Task<List<PersonView>> GetAllPeopleAsync(CancellationToken cancellationToken)
         {
-            List<PersonView> list = new List<PersonView>();
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_GetAllPeople", connection))
+            var people = await context.People
+                    .AsNoTracking()
+                    .Select(p => new PersonView
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            while (await reader.ReadAsync(cancellationToken))
-                            {
-                                list.Add(new PersonView
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("PersonID")),
-                                    reader.GetString(reader.GetOrdinal("FullName")),
-                                    reader.GetString(reader.GetOrdinal("Email")),
-                                    reader.GetString(reader.GetOrdinal("Phone")),
-                                    reader.GetString(reader.GetOrdinal("Gender")),
-                                    reader.GetDateTime(reader.GetOrdinal("BirthDate"))
-                                ));
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return list;
+                        PersonId = p.PersonID,
+                        FullName = p.FirstName + " " + p.SecondName + " " + p.LastName,
+                        Email = p.Email,
+                        Phone = p.Phone,
+                        Gender = p.Gender ? "Female" : "Male",
+                        BirthDate = p.BirthDate
+                    })
+                    .OrderBy(p => p.PersonId)
+                    .ToListAsync(cancellationToken);
+            return people;
         }
     }
 }

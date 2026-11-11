@@ -1,4 +1,4 @@
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Interfaces;
 

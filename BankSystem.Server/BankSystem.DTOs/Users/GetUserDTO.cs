@@ -8,19 +8,10 @@ namespace BankSystem.DTOs.Users
 {
     public class GetUserDTO
     {
-        public int userId { get; set; }
-        public int personId { get; set; }
-        public string username { get; set; }
-        public int permissions { get; set; }
-        public bool isActive { get; set; }
-
-        public GetUserDTO()
-        {
-            userId = -1;
-            personId = -1;
-            username = string.Empty;
-            permissions = 0;
-            isActive = false;
-        }
+        public int UserId { get; set; }
+        public int PersonId { get; set; }
+        public required string Username { get; set; }
+        public int Permissions { get; set; }
+        public bool IsActive { get; set; }
     }
 }

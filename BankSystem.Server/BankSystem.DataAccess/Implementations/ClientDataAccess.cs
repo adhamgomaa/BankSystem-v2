@@ -1,4 +1,4 @@
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
@@ -7,322 +7,115 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BankSystem.DataAccess.Interfaces;
+using BankSystem.DataAccess.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankSystem.DataAccess.Implementations
 {
-    public sealed class ClientDataAccess(DataAccessSettings settings) : IClientDataAccess
+    public sealed class ClientDataAccess(BankDbContext context) : IClientDataAccess
     {
         public async Task<Client?> GetClientAsync(int id, CancellationToken cancellationToken)
         {
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_FindClientById", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@clientId", id);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                            {
-                                return new Client
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("ClientID")),
-                                    reader.GetInt32(reader.GetOrdinal("AccountNumber")),
-                                    reader.GetInt32(reader.GetOrdinal("PersonID")),
-                                    reader.GetInt32(reader.GetOrdinal("PinCode")),
-                                    reader.GetDecimal(reader.GetOrdinal("Balance"))
-                                );
-                            }
-                            else
-                                return null;
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            var client = await context.Clients.FindAsync([id], cancellationToken);
+            return client;
         }
 
         public async Task<Client?> GetClientByAccNumAsync(int accountNumber, CancellationToken cancellationToken)
         {
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_FindClientByAccNum", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@accNum", accountNumber);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                            {
-                                return new Client
-                                (
-                                    reader.GetInt32(reader.GetOrdinal("ClientID")),
-                                    reader.GetInt32(reader.GetOrdinal("AccountNumber")),
-                                    reader.GetInt32(reader.GetOrdinal("PersonID")),
-                                    reader.GetInt32(reader.GetOrdinal("PinCode")),
-                                    reader.GetDecimal(reader.GetOrdinal("Balance"))
-                                );
-                            }
-                            else
-                                return null;
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            var client = await context.Clients
+                        .AsNoTracking()
+                        .SingleOrDefaultAsync(c => c.AccountNumber == accountNumber, cancellationToken);
+            return client;
         }
 
         public async Task<int> AddNewClientAsync(Client newClient, CancellationToken cancellationToken)
         {
-            int ClientID = -1;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_AddNewClient", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@accNum", newClient.accountNumber);
-                        command.Parameters.AddWithValue("@personId", newClient.personId);
-                        command.Parameters.AddWithValue("@pinCode", newClient.pinCode);
-                        command.Parameters.AddWithValue("@balance", newClient.balance);
-                        SqlParameter outputId = new SqlParameter("@clientId", SqlDbType.Int)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        command.Parameters.Add(outputId);
-                        await connection.OpenAsync(cancellationToken);
-                        await command.ExecuteNonQueryAsync(cancellationToken);
-                        ClientID = (int)outputId.Value;
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return ClientID;
+            context.Clients.Add(newClient);
+            await context.SaveChangesAsync(cancellationToken);
+            return newClient.ClientID;
         }
         public async Task<bool> UpdateClientAsync(Client updatedClient, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_UpdateClient", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@accNum", updatedClient.accountNumber);
-                        command.Parameters.AddWithValue("@personId", updatedClient.personId);
-                        command.Parameters.AddWithValue("@pinCode", updatedClient.pinCode);
-                        command.Parameters.AddWithValue("@balance", updatedClient.balance);
-                        command.Parameters.AddWithValue("@clientId", updatedClient.clientId);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var client = await context.Clients.FindAsync([updatedClient.ClientID], cancellationToken);
+            if(client is null)
+                return false;
+            client.AccountNumber = updatedClient.AccountNumber;
+            client.Balance = updatedClient.Balance;
+            client.PinCode = updatedClient.PinCode;
+            client.PersonID = updatedClient.PersonID;
+
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
 
         public async Task<bool> DeleteClientAsync(int clientId, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_DeleteClient", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@clientId", clientId);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var client = await context.Clients.FindAsync([clientId], cancellationToken);
+            if(client is null)
+                return false;
+            context.Clients.Remove(client);
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
 
         public async Task<List<ClientView>> GetAllClientsAsync(CancellationToken cancellationToken)
         {
-            List<ClientView> clients = new List<ClientView>();
-            await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-            {
-                await using (SqlCommand command = new SqlCommand("SP_GetAllClients", connection))
-                {
-                    command.CommandType = CommandType.StoredProcedure;
-                    await connection.OpenAsync(cancellationToken);
-                    await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                    {
-                        while (await reader.ReadAsync(cancellationToken))
-                        {
-                            clients.Add(new ClientView
-                            (
-                                reader.GetInt32(reader.GetOrdinal("ClientID")),
-                                reader.GetInt32(reader.GetOrdinal("AccountNumber")),
-                                reader.GetString(reader.GetOrdinal("FullName")),
-                                reader.GetString(reader.GetOrdinal("Email")),
-                                reader.GetString(reader.GetOrdinal("Phone")),
-                                reader.GetDecimal(reader.GetOrdinal("Balance"))
-                            ));
-                        }
-                    }
-                }
-            }
+            var clients = await context.Clients
+                            .AsNoTracking()
+                            .Select(c => new ClientView
+                            {
+                                ClientId = c.ClientID,
+                                AccountNumber = c.AccountNumber,
+                                FullName = c.Person.FirstName + " " + c.Person.SecondName + " " + c.Person.LastName,
+                                Phone = c.Person.Phone,
+                                Email = c.Person.Email,
+                                Balance = c.Balance
+                            })
+                            .OrderBy(c => c.ClientId)
+                            .ToListAsync(cancellationToken);
             return clients;
         }
+
+        public async Task<int> GetCountAsync(CancellationToken cancellationToken)
+        {
+            int count = await context.Clients.AsNoTracking().CountAsync(cancellationToken);
+            return count;
+        }
+
         public async Task<bool> ClientIsExistAsync(int ClientId, CancellationToken cancellationToken)
         {
-            bool isExist = false;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_ClientIsExists", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@clientId", ClientId);
-                        await connection.OpenAsync(cancellationToken);
-                        await using (SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken))
-                        {
-                            if (await reader.ReadAsync(cancellationToken))
-                            {
-                                isExist = true;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
+            bool isExist = await context.Clients.AsNoTracking().AnyAsync(c => c.ClientID == ClientId, cancellationToken);
             return isExist;
         }
         public async Task<decimal> GetBalanceByAccountNumberAsync(int accountNumber, CancellationToken cancellationToken)
         {
-            decimal balance = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_GetClientBalance", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@accNum", accountNumber);
-                        SqlParameter output = new SqlParameter("@balance", SqlDbType.Decimal)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        command.Parameters.Add(output);
-                        await connection.OpenAsync(cancellationToken);
-                        await command.ExecuteNonQueryAsync(cancellationToken);
-                        balance = (decimal)output.Value;
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return balance;
+            var client = await context.Clients
+                            .AsNoTracking()
+                            .SingleOrDefaultAsync(c => c.AccountNumber == accountNumber, cancellationToken);
+            if(client is not null)
+                return client.Balance;
+            return -1;
         }
         public async Task<decimal> GetTotalBalancesAsync(CancellationToken cancellationToken)
         {
-            decimal balance = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_GetTotalBalance", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        SqlParameter output = new SqlParameter("@totalBalance", SqlDbType.Decimal)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        command.Parameters.Add(output);
-                        await connection.OpenAsync(cancellationToken);
-                        await command.ExecuteNonQueryAsync(cancellationToken);
-                        balance = (decimal)output.Value;
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return balance;
+            decimal balances = await context.Clients.AsNoTracking().SumAsync(c => c.Balance, cancellationToken);
+            return balances;
         }
 
         public async Task<bool> DepositAsync(int AccNum, decimal amount, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_Deposit", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@accNum", AccNum);
-                        command.Parameters.AddWithValue("@amount", amount);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var client = await context.Clients.SingleOrDefaultAsync(c => c.AccountNumber == AccNum, cancellationToken);
+            if(client is null)
+                return false;
+            client.Balance += amount;
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
 
         public async Task<bool> WithdrawalAsync(int AccNum, decimal amount, CancellationToken cancellationToken)
         {
-            int rowAffected = 0;
-            try
-            {
-                await using (SqlConnection connection = new SqlConnection(settings.ConnectionString))
-                {
-                    await using (SqlCommand command = new SqlCommand("SP_Withdrawal", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@accNum", AccNum);
-                        command.Parameters.AddWithValue("@amount", amount);
-                        await connection.OpenAsync(cancellationToken);
-                        rowAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-                    }
-                }
-            }
-            catch (SqlException)
-            {
-                throw;
-            }
-            return rowAffected > 0;
+            var client = await context.Clients.SingleOrDefaultAsync(c => c.AccountNumber == AccNum, cancellationToken);
+            if (client is null || client.Balance < amount)
+                return false;
+            client.Balance -= amount;
+            return await context.SaveChangesAsync(cancellationToken) > 0;
         }
     }
 }

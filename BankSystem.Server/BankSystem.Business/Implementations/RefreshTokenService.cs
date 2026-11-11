@@ -1,9 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using BankSystem.Business.Interfaces;
-using BankSystem.Business;
 using BankSystem.DataAccess.Interfaces;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Implementations;
 
@@ -17,17 +16,30 @@ public sealed class RefreshTokenService(
         TimeSpan lifetime,
         CancellationToken cancellationToken)
     {
+        if (userId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(userId), "UserId must be greater than zero.");
+        }
+
+        if (tokenFamilyId == Guid.Empty)
+        {
+            throw new ArgumentException("Token family id cannot be empty.", nameof(tokenFamilyId));
+        }
+
         ValidateLifetime(lifetime);
         var token = GenerateToken();
         var tokenHash = HashToken(token);
         var expiresAt = DateTime.UtcNow.Add(lifetime);
 
-        var refreshTokenId = await refreshTokenData.AddAsync(
-            userId,
-            tokenHash,
-            expiresAt,
-            tokenFamilyId,
-            cancellationToken);
+        var newRefresh = new RefreshToken
+        {
+            UserId = userId,
+            TokenHash = tokenHash,
+            ExpiresAt = expiresAt,
+            TokenFamilyId = tokenFamilyId
+        };
+
+        var refreshTokenId = await refreshTokenData.AddAsync(newRefresh, cancellationToken);
 
         if (refreshTokenId <= 0)
         {
@@ -42,6 +54,7 @@ public sealed class RefreshTokenService(
         TimeSpan lifetime,
         CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
         ValidateLifetime(lifetime);
 
         var oldTokenHash = HashToken(refreshToken);
@@ -71,7 +84,7 @@ public sealed class RefreshTokenService(
         }
 
         var user = await userService.FindUserAsync(current.UserId, cancellationToken);
-        if (user is null || !user.isActive)
+        if (user is null || !user.IsActive)
         {
             await refreshTokenData.RevokeFamilyAsync(
                 current.UserId,
@@ -111,6 +124,8 @@ public sealed class RefreshTokenService(
 
     public async Task LogoutAsync(string refreshToken, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
+
         var tokenHash = HashToken(refreshToken);
         var current = await refreshTokenData.GetByHashAsync(tokenHash, cancellationToken);
         if (current is not null)
@@ -130,6 +145,8 @@ public sealed class RefreshTokenService(
 
     private static string HashToken(string token)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(token);
+
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
     }
 

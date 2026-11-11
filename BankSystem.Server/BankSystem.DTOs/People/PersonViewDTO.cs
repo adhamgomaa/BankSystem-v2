@@ -9,19 +9,10 @@ namespace BankSystem.DTOs.People
     public class PersonViewDTO
     {
         public int PersonId { get; set; }
-        public string FullName { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public string Gender { get; set; }
+        public required string FullName { get; set; }
+        public required string Email { get; set; }
+        public required string Phone { get; set; }
+        public required string Gender { get; set; }
         public DateTime BirthDate { get; set; }
-        public PersonViewDTO()
-        {
-            PersonId = -1;
-            FullName = string.Empty;
-            Email = string.Empty;
-            Phone = string.Empty;
-            Gender = string.Empty;
-            BirthDate = DateTime.Now;
-        }
     }
 }

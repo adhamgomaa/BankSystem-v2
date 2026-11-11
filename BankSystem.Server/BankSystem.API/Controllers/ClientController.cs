@@ -1,7 +1,6 @@
-﻿using BankSystem.Business;
-using BankSystem.Business.Interfaces;
+﻿using BankSystem.Business.Interfaces;
 using BankSystem.DTOs.Clients;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using BankSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -24,12 +23,12 @@ namespace BankSystem.API.Controllers
                 return NotFound("No Clients Found");
             var clientDTO = clients.Select(client => new ClientViewDTO
             {
-                clientId = client.clientId,
-                accountNumber = client.accountNumber,
-                fullName = client.fullName,
-                email = client.email,
-                phone = client.phone,
-                balance = client.balance
+                ClientId = client.ClientId,
+                AccountNumber = client.AccountNumber,
+                FullName = client.FullName,
+                Email = client.Email,
+                Phone = client.Phone,
+                Balance = client.Balance
             });
             return Ok(clientDTO);
         }
@@ -47,12 +46,12 @@ namespace BankSystem.API.Controllers
 
             if (client == null) return NotFound($"There's no client with this Id: {id}");
 
-            ClientDTO clientDTO = new ClientDTO
+            ClientDTO clientDTO = new()
             {
-                clientId = client.clientId,
-                accountNumber = client.accountNumber,
-                personId = client.personId,
-                balance = client.balance
+                ClientId = client.ClientID,
+                AccountNumber = client.AccountNumber,
+                PersonId = client.PersonID,
+                Balance = client.Balance
             };
 
             return Ok(clientDTO);
@@ -71,12 +70,12 @@ namespace BankSystem.API.Controllers
 
             if (client == null) return NotFound($"There's no client with this AccountNumber: {accNum}");
 
-            ClientDTO clientDTO = new ClientDTO
+            ClientDTO clientDTO = new()
             {
-                clientId = client.clientId,
-                accountNumber = client.accountNumber,
-                personId = client.personId,
-                balance = client.balance
+                ClientId = client.ClientID,
+                AccountNumber = client.AccountNumber,
+                PersonId = client.PersonID,
+                Balance = client.Balance
             };
 
             return Ok(clientDTO);
@@ -140,7 +139,7 @@ namespace BankSystem.API.Controllers
             Client? client = await clientService.GetClientByAccNumAsync(depositDTO.AccNum, cancellationToken);
             if (client == null) return NotFound("This client isn't found");
             bool deposit = await clientService.DepositAsync(depositDTO.AccNum, depositDTO.Amount, cancellationToken);
-            return deposit ? Ok($"Transaction Successfully, your balance become: {client.balance + depositDTO.Amount}") : StatusCode(500, new { message = "Error" });
+            return deposit ? Ok($"Transaction Successfully, your balance become: {client.Balance + depositDTO.Amount}") : StatusCode(500, new { message = "Error" });
         }
 
         [HttpPut("Withdrawal", Name = "Withdrawal")]
@@ -154,7 +153,7 @@ namespace BankSystem.API.Controllers
             Client? client = await clientService.GetClientByAccNumAsync(withdrawDTO.AccNum, cancellationToken);
             if (client == null) return NotFound("This client isn't found");
             bool deposit = await clientService.WithdrawalAsync(withdrawDTO.AccNum, withdrawDTO.Amount, cancellationToken);
-            return deposit ? Ok($"Transaction Successfully, your balance become: {client.balance - withdrawDTO.Amount}") : StatusCode(500, new { message = "Your balance is not enough" });
+            return deposit ? Ok($"Transaction Successfully, your balance become: {client.Balance - withdrawDTO.Amount}") : StatusCode(500, new { message = "Your balance is not enough" });
         }
 
         [HttpPost(Name = "AddNewClient")]
@@ -165,29 +164,29 @@ namespace BankSystem.API.Controllers
             CreateClientDTO createdClient,
             CancellationToken cancellationToken)
         {
-            if (createdClient.personId < 1 || createdClient.accountNumber < 1)
+            if (createdClient.PersonId < 1 || createdClient.AccountNumber < 1)
                 return BadRequest("Invalid data");
 
-            Client newClient = new Client
+            Client newClient = new()
             {
-                accountNumber = createdClient.accountNumber,
-                personId = createdClient.personId,
-                pinCode = createdClient.pinCode,
-                balance = createdClient.balance
+                AccountNumber = createdClient.AccountNumber,
+                PersonID = createdClient.PersonId,
+                PinCode = createdClient.PinCode,
+                Balance = createdClient.Balance
             };
 
             if (!await clientService.AddNewClientAsync(newClient, cancellationToken))
                 return StatusCode(500, new { message = "Error Adding Client" });
 
-            ClientDTO client = new ClientDTO
+            ClientDTO client = new()
             {
-                clientId = newClient.clientId,
-                accountNumber = newClient.accountNumber,
-                personId = newClient.personId,
-                balance = newClient.balance
+                ClientId = newClient.ClientID,
+                AccountNumber = newClient.AccountNumber,
+                PersonId = newClient.PersonID,
+                Balance = newClient.Balance
             };
 
-            return CreatedAtRoute("GetClientByID", new { id = newClient.clientId }, client);
+            return CreatedAtRoute("GetClientByID", new { id = newClient.ClientID }, client);
         }
 
         [HttpPut("{id}", Name = "UpdateClient")]
@@ -200,15 +199,15 @@ namespace BankSystem.API.Controllers
             UpdateClientDTO updateClient,
             CancellationToken cancellationToken)
         {
-            if (id < 1 || updateClient.accountNumber < 1)
+            if (id < 1 || updateClient.AccountNumber < 1)
                 return BadRequest("Invalid data");
 
             Client? client = await clientService.GetClientByIDAsync(id, cancellationToken);
             if (client == null) return NotFound($"There's no client with this Id: {id}");
 
-            client.accountNumber = updateClient.accountNumber;
-            client.pinCode = updateClient.pinCode;
-            client.balance = updateClient.balance;
+            client.AccountNumber = updateClient.AccountNumber;
+            client.PinCode = updateClient.PinCode;
+            client.Balance = updateClient.Balance;
 
             if (await clientService.UpdateClientAsync(client, cancellationToken)) return Ok(updateClient);
             else return StatusCode(500, new { message = "Error Updating Client" });

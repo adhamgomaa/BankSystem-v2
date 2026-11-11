@@ -10,16 +10,10 @@ namespace BankSystem.DTOs.Clients
     public class UpdateClientDTO
     {
         [Required]
-        public int accountNumber { get; set; }
+        public int AccountNumber { get; set; }
         [Required]
-        public int pinCode { get; set; }
+        public int PinCode { get; set; }
         [Required]
-        public decimal balance { get; set; }
-        public UpdateClientDTO()
-        {
-            accountNumber = 0;
-            pinCode = 0;
-            balance = 0;
-        }
+        public decimal Balance { get; set; }
     }
 }

@@ -1,8 +1,6 @@
-﻿using BankSystem.Business;
-using BankSystem.Business.Interfaces;
-using BankSystem.DTOs.Clients;
+﻿using BankSystem.Business.Interfaces;
 using BankSystem.DTOs.People;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using BankSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -23,7 +21,7 @@ namespace BankSystem.API.Controllers
             List<PersonView> people = await peopleService.GetAllPeopleAsync(cancellationToken);
             if (people.Count == 0)
                 return NotFound("No People Found");
-            List<PersonViewDTO> personDTO = people.Select(person => new PersonViewDTO
+            var personDTO = people.Select(person => new PersonViewDTO
             {
                 PersonId = person.PersonId,
                 FullName = person.FullName,
@@ -48,16 +46,16 @@ namespace BankSystem.API.Controllers
 
             if (person == null) return NotFound($"There's no person with this Id: {id}");
 
-            GetPersonDTO personDTO = new GetPersonDTO
+            GetPersonDTO personDTO = new()
             {
-                PersonId = person.personId,
-                FirstName = person.firstName,
-                SecondName = person.secondName,
-                LastName = person.lastName,
-                Email = person.email,
-                Phone = person.phone,
-                Gender = person.gender,
-                BirthDate = person.birthDate
+                PersonId = person.PersonID,
+                FirstName = person.FirstName,
+                SecondName = person.SecondName,
+                LastName = person.LastName,
+                Email = person.Email,
+                Phone = person.Phone,
+                Gender = person.Gender ? "Female" : "Male",
+                BirthDate = person.BirthDate
             };
 
             return Ok(personDTO);
@@ -84,33 +82,33 @@ namespace BankSystem.API.Controllers
             CreatePersonDTO createPerson,
             CancellationToken cancellationToken)
         {
-            Person newPerson = new Person
+            Person newPerson = new()
             {
-                firstName = createPerson.firstName,
-                secondName = createPerson.secondName,
-                lastName = createPerson.lastName,
-                phone = createPerson.phone,
-                email = createPerson.email,
-                gender = createPerson.gender,
-                birthDate = createPerson.birthDate
+                FirstName = createPerson.FirstName,
+                SecondName = createPerson.SecondName,
+                LastName = createPerson.LastName,
+                Phone = createPerson.Phone,
+                Email = createPerson.Email,
+                Gender = createPerson.Gender,
+                BirthDate = createPerson.BirthDate
             };
 
             if (!await peopleService.AddNewPersonAsync(newPerson, cancellationToken))
                 return StatusCode(500, new { message = "Error Adding Person" });
 
-            PersonDTO person = new PersonDTO
+            PersonDTO person = new()
             {
-                PersonId = newPerson.personId,
-                FirstName = newPerson.firstName,
-                SecondName = newPerson.secondName,
-                LastName = newPerson.lastName,
-                Email = newPerson.email,
-                Phone = newPerson.phone,
-                GenderByte = newPerson.gender,
-                BirthDate = newPerson.birthDate
+                PersonId = newPerson.PersonID,
+                FirstName = newPerson.FirstName,
+                SecondName = newPerson.SecondName,
+                LastName = newPerson.LastName,
+                Email = newPerson.Email,
+                Phone = newPerson.Phone,
+                Gen = newPerson.Gender,
+                BirthDate = newPerson.BirthDate
             };
 
-            return CreatedAtRoute("GetPersonByID", new { id = newPerson.personId }, person);
+            return CreatedAtRoute("GetPersonByID", new { id = newPerson.PersonID }, person);
         }
 
         [HttpPut("{id}", Name = "UpdatePerson")]
@@ -129,13 +127,13 @@ namespace BankSystem.API.Controllers
             Person? person = await peopleService.GetPersonAsync(id, cancellationToken);
             if (person == null) return NotFound($"There's no person with this Id: {id}");
 
-            person.firstName = updatePerson.firstName;
-            person.secondName = updatePerson.secondName;
-            person.lastName = updatePerson.lastName;
-            person.phone = updatePerson.phone;
-            person.email = updatePerson.email;
-            person.gender = updatePerson.gender;
-            person.birthDate = updatePerson.birthDate;
+            person.FirstName = updatePerson.FirstName;
+            person.SecondName = updatePerson.SecondName;
+            person.LastName = updatePerson.LastName;
+            person.Phone = updatePerson.Phone;
+            person.Email = updatePerson.Email;
+            person.Gender = updatePerson.Gender;
+            person.BirthDate = updatePerson.BirthDate;
 
 
             if (await peopleService.UpdatePersonAsync(person, cancellationToken)) return Ok(updatePerson);

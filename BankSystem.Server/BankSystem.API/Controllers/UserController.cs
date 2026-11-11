@@ -1,7 +1,6 @@
-﻿using BankSystem.Business;
-using BankSystem.Business.Interfaces;
+﻿using BankSystem.Business.Interfaces;
 using BankSystem.DTOs.Users;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using BankSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -26,14 +25,14 @@ namespace BankSystem.API.Controllers
                 return NotFound("No Users Found");
             var usersDTO = users.Select(user => new UserViewDTO
             {
-                userId = user.userId,
-                personId = user.personId,
-                username = user.username,
-                fullName = user.fullName,
-                email = user.email,
-                phone = user.phone,
-                permissions = user.permissions,
-                isActive = user.isActive
+                UserId = user.UserId,
+                PersonId = user.PersonId,
+                Username = user.Username,
+                FullName = user.FullName,
+                Email = user.Email,
+                Phone = user.Phone,
+                Permissions = user.Permissions,
+                IsActive = user.IsActive
             });
             return Ok(usersDTO);
         }
@@ -51,13 +50,13 @@ namespace BankSystem.API.Controllers
 
             if (user == null) return NotFound($"There's no user with this Id: {id}");
 
-            GetUserDTO userDTO = new GetUserDTO
+            GetUserDTO userDTO = new()
             {
-                userId = user.userId,
-                personId = user.personId,
-                username = user.username,
-                permissions = user.permissions,
-                isActive = user.isActive
+                UserId = user.UserID,
+                PersonId = user.PersonID,
+                Username = user.UserName,
+                Permissions = user.Permissions,
+                IsActive = user.IsActive
             };
 
             return Ok(userDTO);
@@ -78,11 +77,11 @@ namespace BankSystem.API.Controllers
 
             UserDTO userDTO = new UserDTO
             {
-                userId = user.userId,
-                personId = user.personId,
-                username = user.username,
-                permissions = user.permissions,
-                isActive = user.isActive
+                UserId = user.UserID,
+                PersonId = user.PersonID,
+                Username = user.UserName,
+                Permissions = user.Permissions,
+                IsActive = user.IsActive
             };
 
             return Ok(userDTO);
@@ -124,31 +123,31 @@ namespace BankSystem.API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<UserDTO>> AddNewUser(CreateUserDTO createUser, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(createUser.username) || createUser.password.Length < 6)
+            if (string.IsNullOrEmpty(createUser.Username) || createUser.Password.Length < 6)
                 return BadRequest("Invalid Data");
                 
             User newUser = new User
             {
-                personId = createUser.personId,
-                username = createUser.username,
-                password = createUser.password,
-                permissions = createUser.permissions,
-                isActive = createUser.isActive
+                PersonID = createUser.PersonId,
+                UserName = createUser.Username,
+                Password = createUser.Password,
+                Permissions = createUser.Permissions,
+                IsActive = createUser.IsActive
             };
 
             if (!await userService.AddUserAsync(newUser, cancellationToken))
                 return StatusCode(500, "Error Adding User");
 
-            UserDTO user = new UserDTO
+            UserDTO user = new()
             {
-                userId = newUser.userId,
-                personId = newUser.personId,
-                username = newUser.username,
-                permissions = newUser.permissions,
-                isActive = newUser.isActive
+                UserId = newUser.UserID,
+                PersonId = newUser.PersonID,
+                Username = newUser.UserName,
+                Permissions = newUser.Permissions,
+                IsActive = newUser.IsActive
             };
 
-            return CreatedAtRoute("GetUserByID", new { id = newUser.userId }, user);
+            return CreatedAtRoute("GetUserByID", new { id = newUser.UserID }, user);
         }
 
         [HttpPut("{id}", Name = "UpdateUser")]
@@ -164,18 +163,17 @@ namespace BankSystem.API.Controllers
             UpdateUserDTO updateUser,
             CancellationToken cancellationToken)
         {
-            if (id < 1 || updateUser.password.Length < 6)
+            if (id < 1 || updateUser.Password.Length < 6)
                 return BadRequest("Invalid data");
 
             User? user = await userService.FindUserAsync(id, cancellationToken);
             if (user == null) return NotFound($"There's no user with this Id: {id}");
 
-            user.personId = updateUser.personId;
-            user.username = updateUser.username;
-            user.password = updateUser.password;
-            user.permissions = updateUser.permissions;
-            user.isActive = updateUser.isActive;
-
+            user.PersonID = updateUser.PersonId;
+            user.UserName = updateUser.Username;
+            user.Password = updateUser.Password;
+            user.Permissions = updateUser.Permissions;
+            user.IsActive = updateUser.IsActive;
 
             if (await userService.UpdateUserAsync(user, cancellationToken)) return Ok(updateUser);
             else return StatusCode(500, new { message = "Error Updating User" });

@@ -7,7 +7,7 @@ using BankSystem.API.Configuration;
 using BankSystem.API.Interfaces;
 using BankSystem.Business.Interfaces;
 using BankSystem.DTOs.Auth;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 using Microsoft.IdentityModel.Tokens;
 
 namespace BankSystem.API.Implementations;
@@ -24,37 +24,30 @@ public sealed class AuthService(
         CancellationToken cancellationToken)
     {
         var user = await userService.FindUserAsync(request.UserName, cancellationToken);
+        var login = new LoginAttempt
+        {
+            UserId = user?.UserID,
+            AttemptedUserName = request.UserName,
+            Succeeded = false,
+            ClientIpAddress = clientIpAddress
+        };
         if (user is null)
         {
-            await loginAttemptService.RecordAsync(
-                null,
-                request.UserName,
-                false,
-                clientIpAddress,
-                cancellationToken);
+            await loginAttemptService.RecordAsync(login, cancellationToken);
             return null;
         }
 
-        if (!user.isActive || !BCrypt.Net.BCrypt.Verify(request.Password, user.password))
+        if (!user.IsActive || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
         {
-            await loginAttemptService.RecordAsync(
-                user.userId,
-                request.UserName,
-                false,
-                clientIpAddress,
-                cancellationToken);
+            await loginAttemptService.RecordAsync(login, cancellationToken);
             return null;
         }
 
-        await loginAttemptService.RecordAsync(
-            user.userId,
-            request.UserName,
-            true,
-            clientIpAddress,
-            cancellationToken);
+        login.Succeeded = true;
+        await loginAttemptService.RecordAsync(login, cancellationToken);
 
         var refreshToken = await refreshTokenService.CreateAsync(
-            user.userId,
+            user.UserID,
             Guid.NewGuid(),
             TimeSpan.FromDays(jwtSettings.RefreshTokenDays),
             cancellationToken);
@@ -88,9 +81,9 @@ public sealed class AuthService(
     {
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.userId.ToString(CultureInfo.InvariantCulture)),
-            new Claim(ClaimTypes.Name, user.username),
-            new Claim(BankClaimTypes.Permissions, user.permissions.ToString(CultureInfo.InvariantCulture))
+            new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString(CultureInfo.InvariantCulture)),
+            new Claim(ClaimTypes.Name, user.UserName),
+            new Claim(BankClaimTypes.Permissions, user.Permissions.ToString(CultureInfo.InvariantCulture))
         };
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SigningKey));

@@ -8,16 +8,9 @@ namespace BankSystem.DTOs.Clients
 {
     public class ClientDTO
     {
-        public int clientId { get; set; }
-        public int accountNumber { get; set; }
-        public int personId { get; set; }
-        public decimal balance { get; set; }
-        public ClientDTO()
-        {
-            clientId = -1;
-            accountNumber = 0;
-            personId = -1;
-            balance = 0;
-        }
+        public int ClientId { get; set; }
+        public int AccountNumber { get; set; }
+        public int PersonId { get; set; }
+        public decimal Balance { get; set; }
     }
 }

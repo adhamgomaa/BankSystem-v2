@@ -1,41 +1,30 @@
 using BankSystem.Business.Interfaces;
 using BankSystem.DataAccess.Interfaces;
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.Business.Implementations;
 
 public sealed class LoginAttemptService(ILoginAttemptData loginAttemptData) : ILoginAttemptService
 {
     public Task RecordAsync(
-        int? userId,
-        string attemptedUserName,
-        bool succeeded,
-        string? clientIpAddress,
+        LoginAttempt newLogin,
         CancellationToken cancellationToken)
     {
-        if (attemptedUserName.Length > 256)
+        if (newLogin.AttemptedUserName.Length > 256)
         {
-            throw new ArgumentException("Attempted username cannot exceed 256 characters.", nameof(attemptedUserName));
+            throw new ArgumentException("Attempted username cannot exceed 256 characters.", nameof(newLogin.AttemptedUserName));
         }
 
-        if (clientIpAddress?.Length > 45)
+        if (newLogin.ClientIpAddress?.Length > 45)
         {
-            throw new ArgumentException("Client IP address cannot exceed 45 characters.", nameof(clientIpAddress));
+            throw new ArgumentException("Client IP address cannot exceed 45 characters.", nameof(newLogin.ClientIpAddress));
         }
 
-        return loginAttemptData.AddAsync(
-            userId,
-            attemptedUserName,
-            succeeded,
-            clientIpAddress,
-            DateTime.UtcNow,
-            cancellationToken);
+        return loginAttemptData.AddAsync(newLogin, cancellationToken);
     }
 
     public Task<IReadOnlyList<LoginAttempt>> GetRecentAsync(
         int take,
-        CancellationToken cancellationToken)
-    {
-        return loginAttemptData.GetRecentAsync(take, cancellationToken);
-    }
+        CancellationToken cancellationToken) =>
+        loginAttemptData.GetRecentAsync(take, cancellationToken);
 }

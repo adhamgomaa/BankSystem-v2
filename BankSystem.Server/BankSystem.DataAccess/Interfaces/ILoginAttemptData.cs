@@ -1,15 +1,11 @@
-using BankSystem.Shared;
+using BankSystem.Shared.Entities;
 
 namespace BankSystem.DataAccess.Interfaces;
 
 public interface ILoginAttemptData
 {
     Task AddAsync(
-        int? userId,
-        string attemptedUserName,
-        bool succeeded,
-        string? clientIpAddress,
-        DateTime attemptedAtUtc,
+        LoginAttempt newLogin,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<LoginAttempt>> GetRecentAsync(
