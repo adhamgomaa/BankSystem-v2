@@ -120,19 +120,26 @@ public partial class BankDbContext(DbContextOptions<BankDbContext> options) : Db
         {
             entity.HasKey(e => e.RefreshTokenId);
 
+            entity.HasIndex(e => e.TokenFamilyId, "IX_RefreshTokens_TokenFamilyId").HasFillFactor(100);
+            entity.HasIndex(e => e.TokenHash, "UQ_RefreshTokens_TokenHash").IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.ExpiresAt }, "IX_RefreshTokens_UserId_Active")
+                .HasFilter("([RevokedAt] IS NULL)")
+                .HasFillFactor(100);
+
             entity.Property(e => e.TokenHash)
-                .IsRequired();
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .IsFixedLength();
             entity.Property(e => e.CreatedAt)
-                .HasColumnType("datetime2")
-                .IsRequired();
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.ExpiresAt)
                 .HasColumnType("datetime2")
                 .IsRequired();
             entity.Property(e => e.RevokedAt)
                 .HasColumnType("datetime2");
-            entity.Property(e => e.TokenFamilyId)
-                .HasColumnType("uniqueidentifier")
-                .IsRequired();
+            entity.Property(e => e.TokenFamilyId).HasDefaultValueSql("(newid())");
+
             entity.Property(e => e.ReplacedByTokenId);
 
             entity.HasOne(rt => rt.User)
@@ -140,8 +147,8 @@ public partial class BankDbContext(DbContextOptions<BankDbContext> options) : Db
                 .HasForeignKey(rt => rt.UserId)
                 .HasConstraintName("FK_RefreshTokens_Users");
             entity.HasOne(rt => rt.ReplacedToken)
-                .WithOne()
-                .HasForeignKey<RefreshToken>(rt => rt.ReplacedByTokenId)
+                .WithMany(r => r.InverseReplacedByToken)
+                .HasForeignKey(rt => rt.ReplacedByTokenId)
                 .HasConstraintName("FK_RefreshTokens_ReplacedBy");
         });
             

@@ -12,4 +12,6 @@ public partial class RefreshToken
     public Guid TokenFamilyId { get; set; }
     public User User { get; set; } = null!;
     public RefreshToken? ReplacedToken { get; set; }
+    public ICollection<RefreshToken> InverseReplacedByToken { get; set; } = new List<RefreshToken>();
+
 }

@@ -1,297 +1,457 @@
-# 🏦 Bank System v2
+# Bank System v2
 
-![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![C#](https://img.shields.io/badge/C%23-Language-blue)
-![Windows%20Forms](https://img.shields.io/badge/UI-Windows%20Forms-green)
-![ASP.NET%20Core](https://img.shields.io/badge/API-ASP.NET%20Core-red)
-![SQL%20Server](https://img.shields.io/badge/Database-SQL%20Server-orange)
-![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
+<p>
+  <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=csharp&logoColor=white" alt="C#" />
+  <img src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET" />
+  <img src="https://img.shields.io/badge/Windows%20Forms-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Windows Forms" />
+  <img src="https://img.shields.io/badge/ASP.NET%20Core-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="ASP.NET Core" />
+  <img src="https://img.shields.io/badge/REST%20API-02569B?style=for-the-badge&logo=swagger&logoColor=white" alt="REST API" />
+    <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
+  <img src="https://img.shields.io/badge/SQL%20Server-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white" alt="SQL Server" />
+  <img src="https://img.shields.io/badge/Entity%20Framework%20Core-512BD4?style=for-the-badge&logo=nuget&logoColor=white" alt="Entity Framework Core" />
+</p>
 
-A modern bank management system built with C#, Windows Forms, ASP.NET Core Web API, and SQL Server. The project follows a layered client-server architecture where the desktop application speaks to a secure REST API instead of accessing the database directly.
+Bank System v2 is a two-tier, client-server banking application built with C#, Windows Forms, ASP.NET Core Web API, Entity Framework Core, and SQL Server.
 
-This version improves maintainability by separating responsibilities into business logic, data access, DTOs, and API layers.
+The WinForms desktop application provides the operator interface, while the API owns authentication, authorization, business workflows, validation, and database access. Version 2 separates presentation, API, business, data access, DTO, and shared-domain concerns instead of allowing the desktop client to communicate directly with SQL Server.
 
----
-
-# 📌 Overview
-
-The application is designed for bank operations and employee workflows, including:
-
-- People management
-- User management
-- Client and account management
-- Deposits and withdrawals
-- Internal transfers
-- Login and access auditing
-- Permission-based authorization
-
-The system is structured into multiple layers to keep the desktop UI, business rules, and persistence logic cleanly separated.
+> **Platform:** The server targets cross-platform .NET 8, while the Windows Forms client requires Windows and .NET 8.
 
 ---
 
-# ✨ Features
+## Table of Contents
 
-## Authentication and security
-
-- JWT-based authentication
-- Refresh token flow
-- Secure login and logout endpoints
-- Password validation and hashed credentials handling
-- Role/permission-based authorization
-- Rate limiting on sensitive endpoints
-- Login attempt tracking for audit and protection
-
-## User management
-
-- Create users
-- Update users
-- Delete users
-- Search by ID or username
-- List all users
-- View user permissions and activity status
-
-## People management
-
-- Add people records
-- Update people records
-- List and search people
-- Track personal information linked to users and clients
-
-## Client and account management
-
-- Add new clients
-- Update client details
-- Search by ID or account number
-- View client balance
-- Get total bank balances
-- Deposit and withdraw operations
-- Account existence and validation checks
-
-## Transfer management
-
-- Record transfer transactions
-- Fetch transfer history
-- Validate sender/receiver account data
-- Track transaction information with user references
-
-## Audit and admin features
-
-- Login attempt history
-- User activity and audit fields
-- Permission policy enforcement
-- Full access controls for administrative operations
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Request and Authentication Flow](#request-and-authentication-flow)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [API Reference](#api-reference)
+- [Database](#database)
+- [Security](#security)
+- [Getting Started](#getting-started)
+- [Running the Application](#running-the-application)
+- [Screenshots](#screenshots)
+- [Contributing](#contributing)
+- [Author](#author)
 
 ---
 
-# 🏗️ Architecture
+## Overview
+
+The application supports common employee workflows for a bank:
+
+- Maintain people records.
+- Create and administer system users.
+- Create and maintain client bank accounts.
+- Perform deposits and withdrawals.
+- Transfer funds between accounts.
+- Review transfer history.
+- Review recent login attempts.
+- Restrict forms and API endpoints using granular permissions.
+
+The system is intended as a learning and portfolio project that demonstrates:
+
+- A Windows Forms presentation layer.
+- A RESTful ASP.NET Core API.
+- JWT access tokens and rotating refresh tokens.
+- Permission-based authorization.
+- Entity Framework Core data access.
+- SQL Server stored procedures and database relationships.
+- Separation of concerns through interfaces and service projects.
+
+---
+
+## Key Features
+
+### People Management
+
+- Create, view, update, search, and delete person records.
+- Store name, email, phone, gender, and birth date.
+- Use the same person identity as the basis for client and user records.
+
+### User Administration
+
+- Add, update, activate, deactivate, and delete users.
+- Search users by ID or username.
+- List users with person and permission information.
+- Hash passwords with BCrypt before persistence.
+- Attach a user to a person record.
+
+### Client Account Management
+
+- Create client accounts linked to people.
+- Search clients by ID or account number.
+- Update account details and PIN codes.
+- View individual and aggregate balances.
+- Perform deposit and withdrawal operations.
+- Validate account existence before operations.
+
+### Transfers
+
+- Transfer funds between two existing accounts.
+- Deduct from the sender and credit the receiver as one transaction.
+- Reject transfers when either account is missing or sender funds are insufficient.
+- Record sender, receiver, amount, date, and creating user.
+
+### Authentication and Auditing
+
+- Authenticate users through `POST /api/Auth/login`.
+- Issue short-lived JWT access tokens.
+- Issue long-lived opaque refresh tokens stored by SHA-256 hash.
+- Refresh and rotate sessions automatically.
+- Revocation of token families on logout or refresh-token reuse.
+- Record successful and failed login attempts with username, timestamp, user ID, and IP address.
+
+### Permission-Based Desktop Navigation
+
+The WinForms home screen displays module buttons only when the current user's JWT permission claim satisfies the required permission.
+
+| Permission | Value | Typical module |
+|---|---:|---|
+| `People` | `1` | People management |
+| `Client` | `2` | Client/account management |
+| `Transfer` | `4` | Transfers and transaction history |
+| `Registration` | `8` | Login attempt history |
+| `User` | `16` | User administration |
+| `FullAccess` | `-1` | Administrative operations |
+
+Permissions use a flags-based model. A user may receive a combination of module permissions, and `FullAccess` grants all operations.
+
+---
+
+## Architecture
 
 ```text
-+---------------------+
-| WinForms Client     |
-| BankSystem.WinForms |
-+----------+----------+
-           |
-           | HTTP / API calls
-           v
-+---------------------+
-| ASP.NET Core API    |
-| BankSystem.API      |
-| - Controllers       |
-| - JWT auth          |
-| - Authorization     |
-| - Rate limiting     |
-+----------+----------+
-           |
-           | Business logic / services
-           v
-+---------------------+
-| Business Layer      |
-| BankSystem.Business |
-+----------+----------+
-           |
-           | Data access abstraction
-           v
-+---------------------+
-| Data Access Layer   |
-| BankSystem.DataAccess |
-+----------+----------+
-           |
-           | SQL Server
-           v
-+---------------------+
-| SQL Server Database |
-| BankSystemData      |
-+---------------------+
+┌──────────────────────────────────────┐
+│         WinForms Desktop Client      │
+│     Forms, HttpClient, UI state     │
+└──────────────────┬───────────────────┘
+                   │ HTTPS / JSON / JWT
+                   ▼
+┌──────────────────────────────────────┐
+│        ASP.NET Core Web API          │
+│  Controllers, JWT auth, policies,    │
+│  CORS, Swagger, rate limiting         │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│            Business Layer            │
+│  Interfaces, services, BCrypt,       │
+│  refresh-token orchestration         │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│          Data Access Layer           │
+│   EF Core DbContext and repository   │
+│   implementations using LINQ        │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│             SQL Server               │
+│ BankSystemData tables and procedures │
+└──────────────────────────────────────┘
 ```
 
-This architecture is intentionally layered:
+### Solution Responsibilities
 
-- Presentation: Windows Forms UI
-- API: REST endpoints and security
-- Business: validation and transaction rules
-- Data access: SQL Server communication and repository logic
-- Shared/DTO layer: transport contracts and shared models
+| Project | Responsibility |
+|---|---|
+| `BankSystem.WinForms` | Desktop UI, API routes, HttpClient handlers, session state, permission checks |
+| `BankSystem.API` | HTTP controllers, middleware, JWT configuration, authorization policies, rate limiting |
+| `BankSystem.Business` | Domain services, password hashing, refresh-token rules, and use-case coordination |
+| `BankSystem.DataAccess` | Entity Framework Core mappings and SQL persistence implementations |
+| `BankSystem.DTOs` | JSON request and response contracts shared with the WinForms client |
+| `BankSystem.Shared` | Domain entities and cross-layer models |
 
----
-
-# 🛠️ Technology Stack
-
-## Frontend
-
-- C#
-- Windows Forms
-- .NET 8
-
-## Backend
-
-- ASP.NET Core Web API
-- JWT Authentication
-- Authorization policies
-- Rate limiting
-- Dependency injection
-
-## Data and storage
-
-- SQL Server
-- ADO.NET-based data layer
-- Stored procedures and database views
-- Transaction-based operations for banking logic
-
-## Communication
-
-- HttpClient for client-to-API requests
-- DTO-based request/response contracts
+Interfaces are used for the API, business, and data-access boundaries, enabling service replacement and scoped dependency injection in `Program.cs`.
 
 ---
 
-# 🔐 Security model
+## Request and Authentication Flow
 
-The API includes several protection mechanisms:
+### Login
 
-- JWT access tokens with issuer/audience validation
-- Refresh token support for session renewal
-- Permission policies for sensitive sections such as users, clients, transfer operations, and people management
-- Login failure tracking and recent attempt inspection
-- API rate limiting to prevent abuse and brute-force attempts
-- Separation of the UI from the database through the API layer
+1. The WinForms client posts a username and password to `/api/Auth/login`.
+2. The API records the attempt and looks up the user.
+3. The API verifies that the user is active and validates the BCrypt password hash.
+4. A JWT access token is created with:
+   - User ID
+   - Username
+   - Permission value
+   - Issuer
+   - Audience
+   - Expiration
+5. The API generates an opaque refresh token and stores only a SHA-256 hash in SQL Server.
+6. The WinForms client stores the tokens in memory and derives the current user from JWT claims.
 
-Sample permission groups in the project include:
+### Protected API Calls
 
-- People
-- Client
-- Transfer
-- Registration
-- User
-- FullAccess
+The WinForms `AuthTokenHandler` attaches the access token to outbound requests. If the API returns `401 Unauthorized`, the handler attempts one refresh:
 
----
+1. Send the stored refresh token to `/api/Auth/refresh`.
+2. Validate, rotate, and persist the new refresh token.
+3. Build a new access token.
+4. Retry the original request once with the new access token.
+5. Clear the local session if refresh or retry authorization fails.
 
-# 📡 API modules
+The API validates:
 
-The server exposes REST endpoints under the main controller groups:
+- Issuer
+- Audience
+- Lifetime
+- Signing key
+- Signed-token requirement
+- Allowed HMAC SHA-256 algorithm
 
-- `api/Auth` — login, refresh, logout
-- `api/User` — user listing, lookup, creation, updates, and deletion
-- `api/People` — person-related operations
-- `api/Client` — account, balance, deposit, and withdrawal operations
-- `api/Transfer` — transaction and transfer operations
-- `api/Registration` — recent login attempts and registration auditing
+### Logout
 
-This gives the WinForms client a clean API boundary instead of direct database access.
-
----
-
-# 🗄️ Database
-
-The database is based on SQL Server and is initialized via the script in the `Database` folder:
-
-- `Database/database.sql`
-
-The schema includes banking entities such as:
-
-- People
-- Users
-- Clients
-- Transfers
-- Login attempts and audit data
-
-The project is designed around data integrity, access validation, and operational tracking across core banking actions.
+Logout sends the refresh token to `/api/Auth/logout`. The API revokes the token family. The client then clears local session state. If server logout fails, the desktop application still clears the local session and presents a warning.
 
 ---
 
-# 🚀 Getting started
+## Technology Stack
 
-## Prerequisites
+| Area | Technologies |
+|---|---|
+| Language | C# |
+| Desktop UI | Windows Forms, .NET 8 |
+| API | ASP.NET Core Web API |
+| Security | JWT bearer authentication, BCrypt.Net, SHA-256 refresh-token hashing |
+| Authorization | Custom permission requirements and authorization handler |
+| Data access | Entity Framework Core 8, SQL Server provider |
+| Database | Microsoft SQL Server |
+| API documentation | Swagger/OpenAPI |
+| Client communication | `HttpClient`, `HttpMessageHandler`, JSON |
+| Configuration | `appsettings.json`, environment variables, user secrets |
+| Source control | Git and GitHub |
 
-- Visual Studio 2022 or later
-- .NET 8 SDK
-- SQL Server (LocalDB, Express, or developer instance)
-- Windows machine for WinForms desktop client
+---
 
-## 1) Clone the repository
+## Project Structure
+
+```text
+BankSystem-v2/
+├── BankSystem.Client/
+│   ├── BankSystem.Client.sln
+│   └── BankSystem.WinForms/
+│       ├── Forms/
+│       ├── Helpers/
+│       ├── Services/
+│       ├── Properties/
+│       ├── Images/
+│       ├── appsettings.json
+│       └── BankSystem.WinForms.csproj
+├── BankSystem.Server/
+│   ├── BankSystem.Server.sln
+│   ├── BankSystem.API/
+│   │   ├── Authorization/
+│   │   ├── Configuration/
+│   │   ├── Controllers/
+│   │   ├── Implementations/
+│   │   ├── Interfaces/
+│   │   ├── appsettings.json
+│   │   └── Program.cs
+│   ├── BankSystem.Business/
+│   ├── BankSystem.DataAccess/
+│   ├── BankSystem.DTOs/
+│   └── BankSystem.Shared/
+├── Database/
+│   └── database.sql
+├── Screenshots/
+├── .gitignore
+└── README.md
+```
+
+---
+
+## API Reference
+
+The API is protected with JWT bearer authentication unless an endpoint is explicitly marked anonymous.
+
+| Module | Route | Operations |
+|---|---|---|
+| Authentication | `/api/Auth` | Login, refresh, logout |
+| People | `/api/People` | List, get, create, update, delete, existence check |
+| Users | `/api/User` | List, get, create, update, delete, username lookup |
+| Clients | `/api/Client` | Account CRUD, balance lookup, deposits, withdrawals |
+| Transfers | `/api/Transfer` | Create transfer and list history |
+| Login auditing | `/api/Registration` | Read recent login attempts |
+
+### Authentication
+
+```http
+POST /api/Auth/login
+Content-Type: application/json
+
+{
+  "UserName": "username",
+  "Password": "password"
+}
+```
+
+The response contains an access token and refresh token:
+
+```json
+{
+  "AccessToken": "<jwt>",
+  "RefreshToken": "<opaque-refresh-token>"
+}
+```
+
+### Protected Request
+
+```http
+Authorization: Bearer <jwt>
+```
+
+Swagger is available in the Development environment at `/swagger`.
+
+### Representative Endpoint Groups
+
+| Area | Example endpoints |
+|---|---|
+| People | `GET /api/People/All`, `GET /api/People/{id}`, `POST /api/People`, `PUT /api/People/{id}` |
+| Clients | `GET /api/Client/All`, `GET /api/Client/AccountNumber/{accountNumber}`, `PUT /api/Client/Deposit` |
+| Users | `GET /api/User/All`, `GET /api/User/username/{username}`, `POST /api/User`, `PUT /api/User/{id}` |
+| Transfers | `GET /api/Transfer/All`, `POST /api/Transfer` |
+| Auditing | `GET /api/Registration/LoginAttempts?take=50` |
+
+---
+
+## Database
+
+The repository includes a SQL Server script at `Database/database.sql`. The script is stored as UTF-16 text and contains database creation, tables, constraints, views, and authentication-related procedures.
+
+The main modeled data areas are:
+
+| Area | Information stored |
+|---|---|
+| People | Name, email, phone, gender, birth date |
+| Users | Person link, username, BCrypt password, permission flags, active status |
+| Clients | Person link, account number, PIN code, balance |
+| Transfers | Sender account, receiver account, amount, date, creating user |
+| Refresh tokens | User, token hash, family, expiration, replacement, and revocation |
+| Login attempts | Username attempted, user ID, success, UTC time, client IP |
+
+Database behavior also includes:
+
+- Unique constraints on usernames and account numbers.
+- Foreign-key relationships between people, users, clients, and transfers.
+- Refresh-token family and replacement relationships.
+- Stored procedures for login attempt and refresh-token operations.
+- EF Core transaction handling for transfer and refresh operations.
+
+The database and EF Core model use SQL Server naming and types such as `decimal(10,2)`, `datetime`, `datetime2`, and SQL Server indexes.
+
+---
+
+## Security
+
+The API implements:
+
+- JWT signature and claims validation.
+- BCrypt password hashing.
+- Random refresh-token generation.
+- SHA-256 refresh-token storage.
+- Refresh-token rotation and reuse detection.
+- Token-family revocation on suspicious reuse or logout.
+- Custom per-user permission authorization.
+- Login attempt auditing.
+- Fixed-window rate limiting.
+- HTTPS redirection and HSTS outside Development.
+- CORS allow-list configuration.
+- Short-lived access tokens and configurable refresh lifetime.
+- Strong startup validation for missing or weak JWT signing keys.
+
+Recommended production practices include:
+
+- Store the SQL Server credentials outside source control.
+- Store `Jwt:SigningKey` in a secret manager or environment variables.
+- Use HTTPS certificates trusted by the desktop client.
+- Restrict CORS origins to deployed client origins.
+- Encrypt or isolate refresh-token data and database backups.
+- Rotate the JWT signing key through a controlled deployment process.
+- Never expose SQL Server directly to untrusted networks.
+- Replace example/development credentials before sharing or deploying.
+
+Login is limited to five attempts per IP for a five-minute window. Refresh requests are limited to ten per minute, user-write operations to ten per minute, and the global API limit is 120 requests per minute.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Windows 10 or later for the WinForms client.
+- .NET 8 SDK.
+- Visual Studio 2022 or `dotnet` CLI support.
+- SQL Server or SQL Server Express.
+- SQL Server Management Studio or another SQL script runner.
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/adhamgomaa/BankSystem-v2.git
 cd BankSystem-v2
 ```
 
-## 2) Restore the database
+### 2. Create the database
 
-Open the SQL script at:
+Open `Database/database.sql` in SQL Server Management Studio and execute it against the SQL Server instance.
 
-```text
-Database/database.sql
-```
-
-Execute it against a local SQL Server instance. The default database name expected by the project is:
+The application and scripts use the database name:
 
 ```text
 BankSystemData
 ```
 
-## 3) Configure the API connection string
+Because the script is UTF-16, use an editor or SQL tool that detects the file encoding before execution.
 
-Update `BankSystem.Server/BankSystem.API/appsettings.json` to match your SQL Server environment:
+### 3. Configure the API
+
+Set the SQL Server connection string using the local environment or .NET user secrets. Do not commit production credentials.
+
+From the API directory:
+
+```bash
+cd BankSystem.Server/BankSystem.API
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=BankSystemData;User Id=<username>;Password=<password>;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:SigningKey" "<random-secret-at-least-32-utf8-bytes>"
+```
+
+The API also supports environment variables using ASP.NET Core configuration syntax. For example:
+
+```bash
+export Jwt__SigningKey="<random-secret-at-least-32-utf8-bytes>"
+export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=BankSystemData;User Id=<username>;Password=<password>;TrustServerCertificate=True;"
+```
+
+Default JWT settings are:
 
 ```json
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost,1433;Database=BankSystemData;User Id=sa;Password=YourPassword;TrustServerCertificate=True;"
-  },
-  "Jwt": {
-    "Issuer": "BankSystemAPI",
-    "Audience": "BankSystemClient",
-    "AccessTokenMinutes": 30,
-    "RefreshTokenDays": 7
-  }
+  "Issuer": "BankSystemAPI",
+  "Audience": "BankSystemClient",
+  "AccessTokenMinutes": 30,
+  "RefreshTokenDays": 7
 }
 ```
 
-The API also requires a JWT signing key. Set it through environment variables or your development secrets:
+### 4. Configure the WinForms client
 
-```powershell
-$env:Jwt__SigningKey = "YourVeryStrongSecretKeyAtLeast32BytesLong"
-```
-
-## 4) Run the server
-
-Open the server solution:
+The client reads `ApiSettings:BaseUrl` from:
 
 ```text
-BankSystem.Server/BankSystem.Server.sln
+BankSystem.Client/BankSystem.WinForms/appsettings.json
 ```
 
-Then run `BankSystem.API`.
-
-## 5) Run the client
-
-Open the client solution:
-
-```text
-BankSystem.Client/BankSystem.Client.sln
-```
-
-The WinForms client reads the API base URL from its config:
+The default configuration is:
 
 ```json
 {
@@ -301,56 +461,98 @@ The WinForms client reads the API base URL from its config:
 }
 ```
 
-Ensure the API is running on the same port configured in the client before logging in.
+Update this URL if the API runs on a different HTTPS port.
 
 ---
 
-# 🖼️ Screenshots
+## Running the Application
 
-## Login
+### Run the API
 
-![Login](Screenshots/Login.png)
+Using Visual Studio:
 
-## Home
+1. Open `BankSystem.Server/BankSystem.Server.sln`.
+2. Set `BankSystem.API` as the startup project.
+3. Select the `https` launch profile.
+4. Start the application.
 
-![Home](Screenshots/Home.png)
+Using the CLI:
 
-## People Management
+```bash
+dotnet run --project BankSystem.Server/BankSystem.API/BankSystem.API.csproj --launch-profile https
+```
 
-![People](Screenshots/People.png)
+The configured launch profile exposes:
 
-## Client Management
+- HTTPS: `https://localhost:7014`
+- HTTP: `http://localhost:5243`
+- Swagger: `https://localhost:7014/swagger`
 
-![Clients](Screenshots/Clients.png)
+### Run the WinForms client
 
-## Transactions
+Using Visual Studio on Windows:
 
-![Transactions](Screenshots/Transactions.png)
+1. Open `BankSystem.Client/BankSystem.Client.sln`.
+2. Set `BankSystem.WinForms` as the startup project.
+3. Start the application.
 
-## Users
+Using the CLI on Windows:
 
-![Users](Screenshots/Users.png)
+```bash
+dotnet run --project BankSystem.Client/BankSystem.WinForms/BankSystem.WinForms.csproj
+```
 
----
-
-# 📘 Notes
-
-This project demonstrates a practical enterprise-style banking workflow with a clean desktop client and a REST API backend. It is useful as a reference for:
-
-- layered architecture in .NET
-- WinForms + API separation
-- JWT security implementation
-- SQL Server-backed business applications
-- permission-aware enterprise workflows
-
----
-
-# 👨‍💻 Maintainer
-
-This repository is maintained as a banking management sample project demonstrating a .NET client/server architecture.
-
-GitHub: https://github.com/adhamgomaa
+Start the API before the desktop client. Log in with a user account inserted or registered through the application, subject to the user's permissions.
 
 ---
 
-⭐ If you find this project useful, give it a star and share it with others.
+## Screenshots
+
+### Login
+
+![Bank System login screen](Screenshots/Login.png)
+
+### Home
+
+![Bank System home screen](Screenshots/Home.png)
+
+### People
+
+![People management screen](Screenshots/People.png)
+
+### Clients
+
+![Client management screen](Screenshots/Clients.png)
+
+### Transactions
+
+![Transaction and transfer screen](Screenshots/Transactions.png)
+
+### Users
+
+![User management screen](Screenshots/Users.png)
+
+---
+
+## Contributing
+
+1. Fork the repository.
+2. Create a focused feature branch.
+3. Follow the existing project layout:
+   - API concerns in `BankSystem.API`
+   - business rules in `BankSystem.Business`
+   - persistence in `BankSystem.DataAccess`
+   - transport contracts in `BankSystem.DTOs`
+4. Do not commit SQL credentials or JWT signing keys.
+5. Build the affected server and client projects before opening a pull request.
+
+---
+
+## Author
+
+**Adham Gomaa**
+
+- GitHub: [github.com/adhamgomaa](https://github.com/adhamgomaa)
+- Repository: [github.com/adhamgomaa/BankSystem-v2](https://github.com/adhamgomaa/BankSystem-v2)
+
+If this project helped you understand .NET client-server architecture or banking workflow design, consider giving the repository a star.
