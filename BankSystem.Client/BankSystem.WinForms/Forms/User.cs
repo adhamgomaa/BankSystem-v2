@@ -50,7 +50,7 @@ namespace BankSystem.WinForms.Forms
                 return;
             }
 
-            var filterdUser = _allUsers?.Where(p => p.userId.ToString().Contains(keyword)).ToList();
+            var filterdUser = _allUsers?.Where(p => p.UserId.ToString().Contains(keyword)).ToList();
             dgvShow.DataSource = filterdUser;
         }
 
@@ -70,7 +70,7 @@ namespace BankSystem.WinForms.Forms
         private async void User_Load(object sender, EventArgs e)
         {
             timer1.Start();
-            lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
+            lblWelcome.Text = "Welcome: " + CurrentUser.User?.Username;
             dtBirthDate.MaxDate = DateTime.Today.AddYears(-21);
             dtBirthDate.MinDate = DateTime.Today.AddYears(-80);
             SetPermissionControls(0, rbYes, rbNo, cbPeople, cbClients, cbTransaction, cbUser);
@@ -96,13 +96,13 @@ namespace BankSystem.WinForms.Forms
 
         private void rbAsc_CheckedChanged(object sender, EventArgs e)
         {
-            _allUsers = _allUsers?.OrderBy(p => p.userId).ToList();
+            _allUsers = _allUsers?.OrderBy(p => p.UserId).ToList();
             dgvShow.DataSource = _allUsers;
         }
 
         private void rbDesc_CheckedChanged(object sender, EventArgs e)
         {
-            _allUsers = _allUsers?.OrderByDescending(p => p.userId).ToList();
+            _allUsers = _allUsers?.OrderByDescending(p => p.UserId).ToList();
             dgvShow.DataSource = _allUsers;
         }
 
@@ -165,11 +165,11 @@ namespace BankSystem.WinForms.Forms
             {
                 CreateUserDTO createUser = new()
                 {
-                    username = txtUsername.Text,
-                    password = txtPass.Text,
-                    permissions = _permission,
-                    personId = Convert.ToInt32(boxPersonId.Text),
-                    isActive = true
+                    Username = txtUsername.Text,
+                    Password = txtPass.Text,
+                    Permissions = _permission,
+                    PersonId = Convert.ToInt32(boxPersonId.Text),
+                    IsActive = true
                 };
                 bool result = await _userService.AddUserAsync(createUser);
                 if (result)
@@ -274,7 +274,7 @@ namespace BankSystem.WinForms.Forms
 
             foreach (var user in _allUsers!)
             {
-                boxUserId.Items.Add(user.userId);
+                boxUserId.Items.Add(user.UserId);
             }
         }
 
@@ -293,7 +293,7 @@ namespace BankSystem.WinForms.Forms
                 txtEmail.Text = person.Email;
                 txtPhone.Text = person.Phone;
                 dtBirthDate.Value = person.BirthDate;
-                if (person.Gender == 0)
+                if (person.Gender == "Male")
                     rbMale.Checked = true;
                 else
                     rbFemale.Checked = true;
@@ -307,10 +307,10 @@ namespace BankSystem.WinForms.Forms
             GetUserDTO? user = await _userService.GetUserByIdAsync(Convert.ToInt32(boxUserId.Text));
             if (user != null)
             {
-                GetPersonDTO? person = await new PersonApiService().GetPersonByIdAsync(user.personId);
+                GetPersonDTO? person = await new PersonApiService().GetPersonByIdAsync(user.PersonId);
                 btnUpdate.Enabled = true;
-                editPersonId.Text = user.personId.ToString();
-                editUsername.Text = user.username;
+                editPersonId.Text = user.PersonId.ToString();
+                editUsername.Text = user.Username;
                 editFirstName.Text = person?.FirstName;
                 editSecondName.Text = person?.SecondName;
                 editLastName.Text = person?.LastName;
@@ -318,18 +318,18 @@ namespace BankSystem.WinForms.Forms
                 editPhone.Text = person?.Phone;
                 editBirthDate.Value = person!.BirthDate;
 
-                if (person.Gender == 0)
+                if (person.Gender == "Male")
                     editMale.Checked = true;
                 else
                     editFemale.Checked = true;
 
-                if (user.isActive)
+                if (user.IsActive)
                     editYesActive.Checked = true;
                 else
                     editNoActive.Checked = true;
 
                 SetPermissionControls(
-                    user.permissions,
+                    user.Permissions,
                     editYseAccess,
                     editNoAccess,
                     editPeople,
@@ -351,18 +351,18 @@ namespace BankSystem.WinForms.Forms
             {
                 UpdateUserDTO updateUser = new()
                 {
-                    username = editUsername.Text,
-                    personId = Convert.ToInt32(editPersonId.Text),
-                    password = editPassword.Text,
-                    permissions = _permission,
-                    isActive = editYesActive.Checked,
+                    Username = editUsername.Text,
+                    PersonId = Convert.ToInt32(editPersonId.Text),
+                    Password = editPassword.Text,
+                    Permissions = _permission,
+                    IsActive = editYesActive.Checked,
                 };
-                if (MessageBox.Show($"Are you sure to update user [{updateUser.username}]?", "Confirm", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
+                if (MessageBox.Show($"Are you sure to update user [{updateUser.Username}]?", "Confirm", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
                 {
                     bool result = await _userService.UpdateUserAsync(Convert.ToInt32(boxUserId.Text), updateUser);
                     if (result)
                     {
-                        MessageBox.Show($"User [{updateUser.username}] updated Successfully", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"User [{updateUser.Username}] updated Successfully", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         await _LoadData();
                     }
                     else

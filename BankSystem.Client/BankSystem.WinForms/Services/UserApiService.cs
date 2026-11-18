@@ -28,7 +28,7 @@ namespace BankSystem.WinForms.Services
             HttpResponseMessage response = await _httpClient.GetAsync(string.Format(ApiRoutes.User.GetId, id));
             if (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.BadRequest)
             {
-                return new GetUserDTO();
+                return null;
             }
 
             if (!response.IsSuccessStatusCode)
@@ -60,6 +60,18 @@ namespace BankSystem.WinForms.Services
             if (!response.IsSuccessStatusCode)
                 throw new Exception(await response.Content.ReadAsStringAsync());
             return await response.Content.ReadFromJsonAsync<bool>();
+        }
+
+        public async Task<int> GetCountUsersAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.User.Count);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return 0;
+            }
+            if (!response.IsSuccessStatusCode)
+                throw new Exception(await response.Content.ReadAsStringAsync());
+            return await response.Content.ReadFromJsonAsync<int>();
         }
 
         public async Task<bool> AddUserAsync(CreateUserDTO createUser)

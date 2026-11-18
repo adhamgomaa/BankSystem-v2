@@ -46,7 +46,7 @@ namespace BankSystem.WinForms.Forms
         private async void People_Load(object sender, EventArgs e)
         {
             timer1.Start();
-            lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
+            lblWelcome.Text = "Welcome: " + CurrentUser.User?.Username;
             dtBirthDate.MaxDate = DateTime.Today.AddYears(-21);
             dtBirthDate.MinDate = DateTime.Today.AddYears(-80);
             await _LoadPersonData();
@@ -122,13 +122,13 @@ namespace BankSystem.WinForms.Forms
             {
                 CreatePersonDTO createPerson = new()
                 {
-                    firstName = txtFirstName.Text,
-                    secondName = txtSecondName.Text,
-                    lastName = txtLastName.Text,
-                    email = txtEmail.Text,
-                    phone = txtPhone.Text,
-                    gender = rbMale.Checked ? Convert.ToByte(0) : Convert.ToByte(1),
-                    birthDate = dtBirthDate.Value
+                    FirstName = txtFirstName.Text,
+                    SecondName = txtSecondName.Text,
+                    LastName = txtLastName.Text,
+                    Email = txtEmail.Text,
+                    Phone = txtPhone.Text,
+                    Gender = rbFemale.Checked,
+                    BirthDate = dtBirthDate.Value
                 };
                 bool result = await _personService.AddPersonAsync(createPerson);
                 if (result)
@@ -171,7 +171,7 @@ namespace BankSystem.WinForms.Forms
                 editLastName.Text = person.LastName;
                 editEmail.Text = person.Email;
                 editPhone.Text = person.Phone;
-                if (person.Gender == 0)
+                if (person.Gender == "Male")
                     editMale.Checked = true;
                 else
                     editFemale.Checked = true;
@@ -191,13 +191,13 @@ namespace BankSystem.WinForms.Forms
             {
                 UpdatePersonDTO updatePerson = new()
                 {
-                    firstName = editFirstName.Text,
-                    secondName = editSecondName.Text,
-                    lastName = editLastName.Text,
-                    email = editEmail.Text,
-                    phone = editPhone.Text,
-                    gender = editMale.Checked ? Convert.ToByte(0) : Convert.ToByte(1),
-                    birthDate = editBirthDate.Value
+                    FirstName = editFirstName.Text,
+                    SecondName = editSecondName.Text,
+                    LastName = editLastName.Text,
+                    Email = editEmail.Text,
+                    Phone = editPhone.Text,
+                    Gender = editFemale.Checked,
+                    BirthDate = editBirthDate.Value
                 };
                 if (MessageBox.Show($"Are you sure to update person?", "Confirm", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
                 {

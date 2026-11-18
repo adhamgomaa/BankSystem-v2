@@ -18,6 +18,7 @@ namespace BankSystem.WinForms.Helpers
         {
             public const string GetAll = "Client/All";
             public const string GetId = "Client/{0}";
+            public const string Count = "Client/Count";
             public const string Update = "Client/{0}";
             public const string Delete = "Client/{0}";
             public const string GetAccNum = "Client/AccountNumber/{0}";
@@ -54,6 +55,7 @@ namespace BankSystem.WinForms.Helpers
         {
             public const string GetAll = "User/All";
             public const string GetId = "User/{0}";
+            public const string Count = "User/Count";
             public const string Update = "User/{0}";
             public const string Delete = "User/{0}";
             public const string GetUsername = "User/username/{0}";

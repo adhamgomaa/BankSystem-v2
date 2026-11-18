@@ -40,20 +40,21 @@ namespace BankSystem.WinForms.Forms
                 return;
             }
 
-            var filterdClients = _allClients?.Where(p => p.accountNumber.ToString().Contains(keyword)).ToList();
+            var filterdClients = _allClients?.Where(p => p.AccountNumber.ToString().Contains(keyword)).ToList();
             dgvShow.DataSource = filterdClients;
         }
 
         private async void Client_Load(object sender, EventArgs e)
         {
             timer1.Start();
-            lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
+            lblWelcome.Text = "Welcome: " + CurrentUser.User?.Username;
             transferToolStripMenuItem.Visible =
                 CurrentUser.HasPermission(BankPermission.Client) &&
                 CurrentUser.HasPermission(BankPermission.Transfer);
             dtBirthDate.MaxDate = DateTime.Today.AddYears(-21);
             dtBirthDate.MinDate = DateTime.Today.AddYears(-80);
             await _LoadClientData();
+            await _fillInComboBox();
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)
@@ -63,13 +64,13 @@ namespace BankSystem.WinForms.Forms
 
         private void rbAsc_CheckedChanged(object sender, EventArgs e)
         {
-            _allClients = _allClients?.OrderBy(p => p.clientId).ToList();
+            _allClients = _allClients?.OrderBy(p => p.ClientId).ToList();
             dgvShow.DataSource = _allClients;
         }
 
         private void rbDesc_CheckedChanged(object sender, EventArgs e)
         {
-            _allClients = _allClients?.OrderByDescending(p => p.clientId).ToList();
+            _allClients = _allClients?.OrderByDescending(p => p.ClientId).ToList();
             dgvShow.DataSource = _allClients;
         }
 
@@ -114,17 +115,17 @@ namespace BankSystem.WinForms.Forms
             {
                 CreateClientDTO createClient = new CreateClientDTO
                 {
-                    accountNumber = Convert.ToInt32(txtAccNum.Text),
-                    personId = Convert.ToInt32(boxPersonId.Text),
-                    pinCode = Convert.ToInt32(txtCode.Text),
-                    balance = numBalance.Value
+                    AccountNumber = Convert.ToInt32(txtAccNum.Text),
+                    PersonId = Convert.ToInt32(boxPersonId.Text),
+                    PinCode = Convert.ToInt32(txtCode.Text),
+                    Balance = numBalance.Value
                 };
                 bool result = await _clientService.AddClientAsync(createClient);
                 if (result)
                 {
                     MessageBox.Show($"A Client Added Successfully", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     await _LoadClientData();
-                    _fillInComboBox();
+                    await _fillInComboBox();
                 }
                 else
                 {
@@ -134,7 +135,7 @@ namespace BankSystem.WinForms.Forms
             Reset_TextBoxs();
         }
 
-        private async void _fillInComboBox()
+        private async Task _fillInComboBox()
         {
             var allPeople = await new PersonApiService().GetAllPeopleAsync();
             boxPersonId.Items.Clear();
@@ -147,7 +148,7 @@ namespace BankSystem.WinForms.Forms
 
             foreach (var client in _allClients!)
             {
-                boxClientId.Items.Add(client.clientId);
+                boxClientId.Items.Add(client.ClientId);
             }
         }
 
@@ -159,9 +160,9 @@ namespace BankSystem.WinForms.Forms
             ClientDTO? client = await _clientService.GetClientByIdAsync(Convert.ToInt32(boxClientId.Text));
             if (client != null)
             {
-                GetPersonDTO? person = await new PersonApiService().GetPersonByIdAsync(client.personId);
+                GetPersonDTO? person = await new PersonApiService().GetPersonByIdAsync(client.PersonId);
                 btnUpdate.Enabled = true;
-                editPersonId.Text = client.personId.ToString();
+                editPersonId.Text = client.PersonId.ToString();
                 editFirstName.Text = person?.FirstName;
                 editSecondName.Text = person?.SecondName;
                 editLastName.Text = person?.LastName;
@@ -169,13 +170,13 @@ namespace BankSystem.WinForms.Forms
                 editPhone.Text = person?.Phone;
                 editBirthDate.Value = person!.BirthDate;
 
-                if (person.Gender == 0)
+                if (person.Gender == "Male")
                     editMale.Checked = true;
                 else
                     editFemale.Checked = true;
                 editCode.Text = string.Empty;
-                editAccNum.Text = client.accountNumber.ToString();
-                editBalance.Value = client.balance;
+                editAccNum.Text = client.AccountNumber.ToString();
+                editBalance.Value = client.Balance;
             }
 
         }
@@ -195,7 +196,7 @@ namespace BankSystem.WinForms.Forms
                 txtEmail.Text = person.Email;
                 txtPhone.Text = person.Phone;
                 dtBirthDate.Value = person.BirthDate;
-                if (person.Gender == 0)
+                if (person.Gender == "Male")
                     rbMale.Checked = true;
                 else
                     rbFemale.Checked = true;
@@ -209,7 +210,7 @@ namespace BankSystem.WinForms.Forms
                 return;
             }
             ClientDTO? client = await _clientService.GetClientByIdAsync(Convert.ToInt32(boxClientId.Text));
-            if (client is null || client.clientId < 1)
+            if (client is null || client.ClientId < 1)
                 return;
 
             if (!int.TryParse(editCode.Text, out int newPinCode))
@@ -220,9 +221,9 @@ namespace BankSystem.WinForms.Forms
 
             UpdateClientDTO updateClient = new()
             {
-                accountNumber = Convert.ToInt32(editAccNum.Text),
-                pinCode = newPinCode,
-                balance = editBalance.Value,
+                AccountNumber = Convert.ToInt32(editAccNum.Text),
+                PinCode = newPinCode,
+                Balance = editBalance.Value,
             };
             if (MessageBox.Show($"Are you sure to update the client?", "Confirm", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
             {
@@ -231,7 +232,7 @@ namespace BankSystem.WinForms.Forms
                 {
                     MessageBox.Show($"The Client with ID = [{boxClientId.Text}] updated Successfully", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     await _LoadClientData();
-                    _fillInComboBox();
+                    await _fillInComboBox();
                 }
                 else
                 {
@@ -254,7 +255,7 @@ namespace BankSystem.WinForms.Forms
                 {
                     MessageBox.Show($"Client with ID = [{dgvShow.CurrentRow.Cells[0].Value}] Deleted Successfully", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     await _LoadClientData();
-                    _fillInComboBox();
+                    await _fillInComboBox();
                 }
                 else
                 {

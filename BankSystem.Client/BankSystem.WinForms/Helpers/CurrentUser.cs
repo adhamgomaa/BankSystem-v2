@@ -15,7 +15,7 @@ namespace BankSystem.WinForms.Helpers
 
         internal static bool HasPermission(BankPermission permission)
         {
-            int userPermissions = User?.permissions ?? 0;
+            int userPermissions = User?.Permissions ?? 0;
             int requiredPermission = (int)permission;
 
             return userPermissions == (int)BankPermission.FullAccess ||
@@ -31,10 +31,10 @@ namespace BankSystem.WinForms.Helpers
             JsonElement claims = payload.RootElement;
             User = new GetUserDTO
             {
-                userId = ReadIntClaim(claims, "nameid", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"),
-                username = username,
-                permissions = ReadIntClaim(claims, "permissions"),
-                isActive = true
+                UserId = ReadIntClaim(claims, "nameid", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"),
+                Username = username,
+                Permissions = ReadIntClaim(claims, "permissions"),
+                IsActive = true
             };
             AccessToken = tokens.AccessToken;
             RefreshToken = tokens.RefreshToken;
@@ -63,7 +63,7 @@ namespace BankSystem.WinForms.Helpers
                     return false;
                 }
 
-                string username = User?.username
+                string username = User?.Username
                     ?? throw new InvalidOperationException("Cannot refresh an authentication session without a user.");
                 SignIn(tokens, username);
                 return true;

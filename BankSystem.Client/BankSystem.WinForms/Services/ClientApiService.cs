@@ -33,7 +33,7 @@ namespace BankSystem.WinForms.Services
             HttpResponseMessage response = await _httpClient.GetAsync(string.Format(ApiRoutes.Client.GetId, id));
             if (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.BadRequest)
             {
-                return new ClientDTO();
+                return null;
             }
 
             if (!response.IsSuccessStatusCode)
@@ -46,7 +46,7 @@ namespace BankSystem.WinForms.Services
             HttpResponseMessage response = await _httpClient.GetAsync(string.Format(ApiRoutes.Client.GetAccNum, AccNum));
             if (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.BadRequest)
             {
-                return new ClientDTO();
+                return null;
             }
 
             if (!response.IsSuccessStatusCode)
@@ -89,6 +89,18 @@ namespace BankSystem.WinForms.Services
             if (!response.IsSuccessStatusCode)
                 throw new Exception(await response.Content.ReadAsStringAsync());
             return await response.Content.ReadFromJsonAsync<decimal>();
+        }
+
+        public async Task<int> GetCountClientsAsync()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.Client.Count);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return 0;
+            }
+            if (!response.IsSuccessStatusCode)
+                throw new Exception(await response.Content.ReadAsStringAsync());
+            return await response.Content.ReadFromJsonAsync<int>();
         }
 
         public async Task<string> DepositAsync(DepositWithdrawDTO DepositDTO)

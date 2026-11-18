@@ -47,7 +47,7 @@ namespace BankSystem.WinForms.Forms
         private void Home_Load(object sender, EventArgs e)
         {
             timer1.Start();
-            lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
+            lblWelcome.Text = "Welcome: " + CurrentUser.User?.Username;
             CheckPermissions();
         }
 

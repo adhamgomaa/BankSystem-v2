@@ -119,9 +119,9 @@ namespace BankSystem.WinForms.Forms
 
             foreach (var client in _allClients!)
             {
-                boxAccNumDeposit.Items.Add(client.accountNumber);
-                boxAccNumWithdraw.Items.Add(client.accountNumber);
-                boxFromAccNum.Items.Add(client.accountNumber);
+                boxAccNumDeposit.Items.Add(client.AccountNumber);
+                boxAccNumWithdraw.Items.Add(client.AccountNumber);
+                boxFromAccNum.Items.Add(client.AccountNumber);
             }
         }
 
@@ -134,7 +134,7 @@ namespace BankSystem.WinForms.Forms
                 return;
             }
 
-            var filterdTransfers = _allTransfers?.Where(t => t.senderAccount.ToString().Contains(keyword)).ToList();
+            var filterdTransfers = _allTransfers?.Where(t => t.SenderAccount.ToString().Contains(keyword)).ToList();
             dgvTrasnferLog.DataSource = filterdTransfers;
         }
 
@@ -147,7 +147,7 @@ namespace BankSystem.WinForms.Forms
                 return;
             }
 
-            var filterdClients = _allClients?.Where(c => c.accountNumber.ToString().Contains(keyword)).ToList();
+            var filterdClients = _allClients?.Where(c => c.AccountNumber.ToString().Contains(keyword)).ToList();
             dgvShow.DataSource = filterdClients;
         }
 
@@ -163,25 +163,25 @@ namespace BankSystem.WinForms.Forms
 
         private void rbAsc_CheckedChanged(object sender, EventArgs e)
         {
-            _allClients = _allClients?.OrderBy(c => c.clientId).ToList();
+            _allClients = _allClients?.OrderBy(c => c.ClientId).ToList();
             dgvShow.DataSource = _allClients;
         }
 
         private void rbDesc_CheckedChanged(object sender, EventArgs e)
         {
-            _allClients = _allClients?.OrderByDescending(c => c.clientId).ToList();
+            _allClients = _allClients?.OrderByDescending(c => c.ClientId).ToList();
             dgvShow.DataSource = _allClients;
         }
 
         private void rbTransferAsc_CheckedChanged(object sender, EventArgs e)
         {
-            _allTransfers = _allTransfers?.OrderBy(t => t.transferId).ToList();
+            _allTransfers = _allTransfers?.OrderBy(t => t.TransferId).ToList();
             dgvTrasnferLog.DataSource = _allTransfers;
         }
 
         private void rbTransferDesc_CheckedChanged(object sender, EventArgs e)
         {
-            _allTransfers = _allTransfers?.OrderByDescending(t => t.transferId).ToList();
+            _allTransfers = _allTransfers?.OrderByDescending(t => t.TransferId).ToList();
             dgvTrasnferLog.DataSource = _allTransfers;
         }
 
@@ -193,7 +193,7 @@ namespace BankSystem.WinForms.Forms
         private async void Transaction_Load(object sender, EventArgs e)
         {
             timer1.Start();
-            lblWelcome.Text = "Welcome: " + CurrentUser.User?.username;
+            lblWelcome.Text = "Welcome: " + CurrentUser.User?.Username;
 
             bool canManageClients = CurrentUser.HasPermission(BankPermission.Client);
             bool canViewTransfers = CurrentUser.HasPermission(BankPermission.Transfer);
@@ -361,10 +361,10 @@ namespace BankSystem.WinForms.Forms
             {
                 CreateTransferDTO transferDTO = new()
                 {
-                    senderAccount = Convert.ToInt32(boxFromAccNum.Text),
-                    receiverAccount = Convert.ToInt32(boxToAccNum.Text),
-                    amount = numTransferAmount.Value,
-                    userId = CurrentUser.User!.userId
+                    SenderAccount = Convert.ToInt32(boxFromAccNum.Text),
+                    ReceiverAccount = Convert.ToInt32(boxToAccNum.Text),
+                    Amount = numTransferAmount.Value,
+                    UserId = CurrentUser.User!.UserId
                 };
                 bool result = await _trasnferService.AddTransferAsync(transferDTO);
                 if (result)

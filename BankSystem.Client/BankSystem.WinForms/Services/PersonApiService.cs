@@ -34,7 +34,7 @@ namespace BankSystem.WinForms.Services
             HttpResponseMessage response = await _httpClient.GetAsync(string.Format(ApiRoutes.People.GetId, id));
             if (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.BadRequest)
             {
-                return new GetPersonDTO();
+                return null;
             }
 
             if (!response.IsSuccessStatusCode)

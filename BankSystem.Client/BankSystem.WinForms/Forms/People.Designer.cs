@@ -222,6 +222,7 @@
             dgvShow.AllowUserToDeleteRows = false;
             dgvShow.AllowUserToOrderColumns = true;
             dgvShow.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+            dgvShow.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
             dgvShow.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvShow.ContextMenuStrip = contextMenuStrip1;
             dgvShow.Dock = DockStyle.Bottom;

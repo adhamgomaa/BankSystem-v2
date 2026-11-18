@@ -20,6 +20,7 @@ public partial class BankDbContext(DbContextOptions<BankDbContext> options) : Db
 
             entity.HasIndex(e => e.UserName, "UQ_Users_Username").IsUnique();
             entity.HasIndex(e => e.PersonID, "IX_Users_PersonId");
+            entity.HasIndex(e => e.PersonID, "UQ_Users_PersonId").IsUnique();
 
             entity.Property(e => e.UserName)
                 .IsRequired()
